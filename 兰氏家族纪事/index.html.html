@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兰氏卷宗：岁月如碑百年史诗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Neutrals & Slate (Background: #FDFBF7, #111827; Accents: #B91C1C, #D97706, #FDE68A) -->
+    <!-- Application Structure Plan: The SPA uses a narrative dashboard approach. It begins with an authoritative Archive intro, flows into an Epic narrative of historical deeds, transitions into a Suspenseful Investigation of the wrongful conviction using interactive evidence toggles, visualizes the temporal impact via a Dashboard, and concludes with a Warm Memoir section. A filterable gallery anchors the bottom. This structure guides the user from macro-history to micro-evidence to emotional legacy, maximizing engagement and comprehension. Text content has been significantly expanded to provide deeper historical and emotional context. -->
+    <!-- Visualization & Content Choices: 
+         1. Impact Comparison -> Goal: Compare -> Viz: Bar Chart (Chart.js/Canvas) -> Interaction: Hover tooltips -> Justification: Starkly contrasts the short duration of heroic deeds vs. decades of suffering.
+         2. Verdict vs. Testimony -> Goal: Analyze/Investigate -> Viz: Interactive Tabbed Cards (HTML/JS) -> Interaction: Click to switch between official verdict and civilian testimonies -> Justification: Emphasizes the suspenseful investigation style, now with expanded analytical text.
+         3. Artifact Gallery -> Goal: Organize -> Viz: CSS Grid (HTML/Tailwind) -> Interaction: Category filtering -> Justification: Allows user-driven exploration of raw primary sources. 
+         Library/Method: Chart.js for data, Vanilla JS for logic. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700;900&display=swap');
+
+        body {
+            background-color: #FDFBF7;
+            font-family: 'Noto Serif SC', serif;
+            color: #1a202c;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* 纹理与背景 */
+        .pattern-grid {
+            background-image: linear-gradient(rgba(217, 119, 6, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(217, 119, 6, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .pattern-dots {
+            background-image: radial-gradient(rgba(30, 58, 138, 0.05) 2px, transparent 2px);
+            background-size: 15px 15px;
+        }
+
+        /* 强制的图表容器约束 */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 50vh;
+            max-height: 400px;
+            min-height: 300px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 40vh;
+            }
+        }
+
+        /* 拍立得照片卡片 */
+        .document-polaroid {
+            background: #ffffff;
+            padding: 12px 12px 35px 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transform: rotate(var(--rotation, -1deg));
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #f3f4f6;
+        }
+        .document-polaroid:hover {
+            transform: rotate(0deg) scale(1.05);
+            z-index: 40;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            border-color: #e5e7eb;
+        }
+        .polaroid-img-box {
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 12px;
+        }
+        .polaroid-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .document-polaroid:hover .polaroid-img-box img {
+            transform: scale(1.03);
+        }
+
+        /* 揭示动画 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s ease-out;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 特殊排版 */
+        .drop-cap::first-letter {
+            font-size: 3.8em;
+            font-weight: 900;
+            float: left;
+            margin-top: 0.05em;
+            margin-right: 0.1em;
+            color: #B91C1C;
+            line-height: 0.85;
+            text-shadow: 2px 2px 0px rgba(185, 28, 28, 0.1);
+        }
+        .section-title {
+            position: relative;
+            display: inline-block;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: #B91C1C;
+            transition: width 0.4s ease;
+        }
+        .section-title:hover::after {
+            width: 100%;
+        }
+        
+        .text-justify-custom {
+            text-align: justify;
+            text-justify: inter-ideograph;
+        }
+
+        /* 证言切换标签 */
+        .tab-btn {
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #B91C1C;
+            color: white;
+            border-color: #B91C1C;
+            box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 画廊过滤 */
+        .filter-btn.active {
+            background-color: #111827;
+            color: white;
+            box-shadow: 0 4px 10px rgba(17, 24, 39, 0.3);
+        }
+        .gallery-item {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="pattern-grid">
+
+    <!-- 导航栏 -->
+    <nav class="fixed w-full top-0 z-50 bg-[#111827]/95 backdrop-blur border-b border-gray-800 text-white transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+            <div class="font-black text-xl tracking-widest text-[#FDE68A] flex items-center gap-2">
+                <span class="text-2xl">🏛️</span> 兰氏卷宗
+            </div>
+            <div class="hidden md:flex space-x-6 text-xs font-bold uppercase tracking-widest">
+                <a href="#intro" class="hover:text-[#D97706] transition-colors py-2">卷宗序言</a>
+                <a href="#epic" class="hover:text-[#D97706] transition-colors py-2">大义史诗</a>
+                <a href="#investigation" class="hover:text-[#D97706] transition-colors py-2">代号314</a>
+                <a href="#data" class="hover:text-[#D97706] transition-colors py-2">岁月刻度</a>
+                <a href="#memoir" class="hover:text-[#D97706] transition-colors py-2">光阴回响</a>
+            </div>
+            <!-- 移动端菜单按钮 -->
+            <button class="md:hidden text-2xl p-2" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">☰</button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#111827] border-t border-gray-800 shadow-2xl absolute w-full">
+            <a href="#intro" class="block py-4 px-4 text-sm text-center border-b border-gray-800 tracking-widest" onclick="document.getElementById('mobile-menu').classList.add('hidden')">卷宗序言</a>
+            <a href="#epic" class="block py-4 px-4 text-sm text-center border-b border-gray-800 tracking-widest" onclick="document.getElementById('mobile-menu').classList.add('hidden')">大义史诗</a>
+            <a href="#investigation" class="block py-4 px-4 text-sm text-center border-b border-gray-800 tracking-widest" onclick="document.getElementById('mobile-menu').classList.add('hidden')">代号314</a>
+            <a href="#data" class="block py-4 px-4 text-sm text-center border-b border-gray-800 tracking-widest" onclick="document.getElementById('mobile-menu').classList.add('hidden')">岁月刻度</a>
+            <a href="#memoir" class="block py-4 px-4 text-sm text-center tracking-widest" onclick="document.getElementById('mobile-menu').classList.add('hidden')">光阴回响</a>
+        </div>
+    </nav>
+
+    <!-- 序言：国家档案纪实风 -->
+    <header id="intro" class="relative bg-gradient-to-b from-[#111827] to-[#1f2937] text-white pt-32 pb-24 px-4 text-center overflow-hidden min-h-[95vh] flex flex-col justify-center">
+        <div class="absolute inset-0 opacity-15 bg-[url('遗迹手稿.jpg')] bg-cover bg-center bg-fixed"></div>
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div class="max-w-5xl mx-auto relative z-10 reveal active">
+            <div class="inline-block px-5 py-2 border border-gray-500 text-gray-300 text-xs md:text-sm tracking-[0.4em] mb-10 uppercase bg-black/40 backdrop-blur shadow-lg">
+                四川荣县成佳兰氏家族史料考证 · 绝密卷宗公开
+            </div>
+            <h1 class="text-6xl md:text-8xl font-black mb-10 tracking-[0.15em] text-[#FDE68A] drop-shadow-2xl" style="text-shadow: 0 10px 30px rgba(253, 230, 138, 0.2);">卷宗里的百年</h1>
+            <div class="h-1.5 w-32 bg-gradient-to-r from-transparent via-[#B91C1C] to-transparent mx-auto mb-12"></div>
+            
+            <div class="bg-black/40 p-8 md:p-12 rounded-xl border border-gray-700/50 backdrop-blur-md shadow-2xl">
+                <p class="text-xl md:text-2xl font-light leading-loose text-gray-300 text-justify-custom indent-8 md:indent-10 mb-6">
+                    历史的洪流往往只记录帝王将相的丰功伟业，而那些被时代车轮无情碾压过的普通人，只能将他们的悲欢离合、屈辱与抗争，深深折叠进发黄的信笺与破旧的皮箱中。但在四川荣县成佳镇，真正的史诗正蛰伏于兰氏家族的这堆百年故纸堆里。
+                </p>
+                <p class="text-xl md:text-2xl font-light leading-loose text-gray-300 text-justify-custom indent-8 md:indent-10">
+                    一封在茫茫戈壁中迟到了半年的《死亡通知书》，一张被揉皱了无数次的20元硬座车票，以及数万字用蝇头小楷工整抄写、字字泣血的申诉状……本互动卷宗严格基于兰氏家族留存的原始手稿与真实物证，为您层层剥开岁月的泥沙，还原一场跨越半个世纪、至死方休的民间法理交锋。历史不容假设，但被掩埋的公理，必将以铁证的形式给出回应。
+                </p>
+            </div>
+
+            <div class="mt-20 animate-bounce text-gray-400 opacity-80 hover:opacity-100 transition-opacity cursor-pointer" onclick="document.getElementById('epic').scrollIntoView({behavior: 'smooth'})">
+                <span class="text-3xl">↓</span>
+                <p class="text-[10px] tracking-[0.3em] mt-3 uppercase font-bold">向下阅览历史物证</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="space-y-32 py-24">
+
+        <!-- 第一章：宏大史诗/英雄颂歌风 -->
+        <section id="epic" class="max-w-7xl mx-auto px-4 reveal">
+            <div class="text-center mb-20">
+                <span class="text-[#B91C1C] font-black tracking-[0.3em] text-sm block mb-3 uppercase">Chapter I</span>
+                <h2 class="section-title text-4xl md:text-5xl font-black text-gray-900 mb-8">风骨长存：大义的代价与回响</h2>
+                <p class="text-gray-600 italic text-xl max-w-3xl mx-auto leading-relaxed">“那是属于草莽义士的年代。大义，从来不是书本上的高谈阔论，而是流淌在血脉里、敢于直面刀枪的不灭薪火。”</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center bg-white p-8 md:p-14 rounded-[2.5rem] shadow-2xl border border-gray-100">
+                <div class="lg:col-span-7 space-y-8 text-gray-700 leading-loose text-lg text-justify-custom drop-cap">
+                    <p>
+                        那是1935年的寒冬，巴蜀大地笼罩在国民党反动派最猖獗的白色恐怖之下。革命烈士兰庶康（吴玉章之女婿）在万县惨遭杀害，据传遗体被施以极刑，指甲壳里生生钉满了竹签。面对这等惨状与杀身之祸，前两批受托收尸之人皆因恐惧而半途折返。在这令人绝望的关头，<strong>兰硕群</strong>挺身而出。他没有豪言壮语，只身一人，带着几斤生石灰与老树皮，踏上了赴万县的生死之路。整整四十个日夜的风餐露宿、昼伏夜出，他硬是将那口装载着义与胆的沉重文书桶背回了故乡。灵柩归乡那日，成佳镇的乡民沿街拉起长长的白布，夹道泣迎，鞭炮声震耳欲聋。这不是普通的收尸，这是在乱世中为中国人抢回了一尊不屈的魂魄。
+                    </p>
+                    <p>
+                        这股埋在骨子里的血性，在抗战胜利后的1945年再次轰然爆发。面对国民党师管区“接兵部队”借“借锅煮饭”之名，实则在乡间烧杀抢掠、欺凌妇女的暴行，兰硕群再也无法按捺胸中怒火。当目睹亲弟兰克群遭十余名士官围殴时，他犹如一头被激怒的雄狮，抄起院中沉甸甸的捣药“碓窝棒”纵身上房，居高临下，与胞弟配合，硬是以少胜多，将近二十名荷枪实弹的伪军军官打得头破血流、落荒而逃。“兰莽汉”的威名自此震慑一方，无数饱受抓丁之苦的穷苦百姓纷纷迁入他所在的保内以求庇护。
+                    </p>
+                    <div class="bg-gradient-to-r from-[#FDFBF7] to-white p-8 border-l-8 border-[#D97706] mt-10 rounded-r-2xl shadow-sm">
+                        <p class="text-lg text-gray-800 font-bold italic m-0 leading-loose text-justify-custom">“在那血雨腥风的岁月里，他是一座庇护乡邻、坚不可摧的丰碑。乡亲们用‘种豆选举’的古老方式将他推举为代理村长。然而，英雄的注脚，往往潜伏着最为沉重、最为荒诞的代价。”</p>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-5 grid grid-cols-2 gap-6">
+                    <div class="document-polaroid" style="--rotation: -3deg">
+                        <div class="polaroid-img-box h-48 md:h-56"><img src="遗迹手稿.jpg" alt="早期纪实手稿"></div>
+                        <p class="text-center text-xs font-bold text-gray-800 mt-3 tracking-widest">【 早期家族纪实手稿 】</p>
+                        <p class="text-[10px] text-gray-500 text-center mt-1 px-2 leading-relaxed">记载了那个动荡年代家族的艰难抉择与生死考验。</p>
+                    </div>
+                    <div class="document-polaroid" style="--rotation: 2deg">
+                        <div class="polaroid-img-box h-48 md:h-56"><img src="太婆申诉书1.jpg" alt="太婆信件"></div>
+                        <p class="text-center text-xs font-bold text-gray-800 mt-3 tracking-widest">【 1986：太婆龚文成亲笔 】</p>
+                        <p class="text-[10px] text-gray-500 text-center mt-1 px-2 leading-relaxed">78岁高龄致信中央，回忆当年支持丈夫千里收尸的“特别辛味”。</p>
+                    </div>
+                    <div class="document-polaroid col-span-2" style="--rotation: 0deg">
+                        <div class="polaroid-img-box h-48"><img src="8.jpg" alt="证词" style="object-position: top;"></div>
+                        <p class="text-center text-xs font-bold text-gray-800 mt-3 tracking-widest">【 饶先郎等民众联合证词 】</p>
+                        <p class="text-[10px] text-gray-500 text-center mt-1 px-4 leading-relaxed">“通街准备迎接，白布拉得长长的，放鞭炮迎接，场面壮烈得很……”乡民的记忆成为了最坚实的后盾。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二章：非虚构调查/悬疑纪实风 -->
+        <section id="investigation" class="bg-gradient-to-b from-[#111827] via-[#1f2937] to-[#111827] py-32 text-white reveal border-y-8 border-[#B91C1C] shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-20">
+                    <span class="text-[#FDE68A] font-black tracking-[0.3em] text-sm block mb-3 uppercase">Chapter II</span>
+                    <h2 class="section-title text-4xl md:text-6xl font-black mb-8 tracking-wide">代号314：一场荒诞的法理交锋</h2>
+                    <p class="text-gray-400 italic text-xl max-w-4xl mx-auto leading-relaxed">“当几棵未栽下的秧苗，足以摧毁一个人的一生。真相究竟如何？让我们翻开卷宗，让跨越时空的民间证言，如手术刀般切开历史的迷雾。”</p>
+                </div>
+
+                <!-- 交互式调查板 -->
+                <div class="bg-black/60 border border-gray-700/80 rounded-[2.5rem] p-6 md:p-14 shadow-2xl backdrop-blur-sm">
+                    
+                    <div class="flex flex-wrap gap-4 mb-12 justify-center border-b border-gray-700 pb-8">
+                        <button class="tab-btn active px-8 py-4 rounded-lg text-sm md:text-base font-bold border border-gray-600 hover:border-white tracking-widest" onclick="switchTab('verdict')">
+                            🔒 官方卷宗：(55)刑字314号
+                        </button>
+                        <button class="tab-btn px-8 py-4 rounded-lg text-sm md:text-base font-bold border border-gray-600 hover:border-white tracking-widest" onclick="switchTab('testimony1')">
+                            🔍 破局证词：乡民的记忆
+                        </button>
+                        <button class="tab-btn px-8 py-4 rounded-lg text-sm md:text-base font-bold border border-gray-600 hover:border-white tracking-widest" onclick="switchTab('testimony2')">
+                            🩸 血亲铁证：胞弟的呐喊
+                        </button>
+                    </div>
+
+                    <div class="min-h-[450px]">
+                        <!-- Tab 1: Verdict -->
+                        <div id="verdict" class="tab-content active">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+                                <div class="md:col-span-5 relative group">
+                                    <div class="absolute -top-4 -left-4 bg-red-700 text-white text-sm font-black px-6 py-2 transform -rotate-12 z-10 shadow-lg border border-red-500 tracking-widest">绝密档案</div>
+                                    <img src="兰硕群判决.jpg" alt="判决书" class="w-full rounded-xl shadow-2xl border-2 border-gray-600 grayscale group-hover:grayscale-0 transition-all duration-700 cursor-zoom-in" onclick="openModal(this.src, '1955年 荣县人民法院 (55)刑字第314号刑事判决书')">
+                                    <p class="text-center text-gray-500 text-xs mt-4">点击图片查看高清原件</p>
+                                </div>
+                                <div class="md:col-span-7 space-y-8">
+                                    <h3 class="text-4xl font-black text-red-500 tracking-wide">足以致命的“鸡毛蒜皮”</h3>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        1955年，新中国刚刚成立不久，历史的列车在这里发生了一次令人战栗的脱轨。翻开这份泛黄的(55)刑字第314号判决书，荒诞感犹如实质般扑面而来。
+                                    </p>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        在那个极左思潮暗流涌动的时期，一个人一生的功过，竟被轻而易举地抹杀。判决书赫然写着：<strong>“影响三箩田面积未栽秧子”</strong>、<strong>“以抬高工资手段拉拢组员”</strong>。就凭这些连日后法院内部人员都私下承认为“鸡毛蒜皮”的罪名，加上其18岁时被抓壮丁当过三个月伪兵（后自行逃脱）的无奈履历，将一位受民选担任代理村长、曾豁出性命保境安民的义士，生生定性为“历史反革命”。
+                                    </p>
+                                    <div class="bg-red-900/20 p-6 border-l-4 border-red-600 rounded-r">
+                                        <p class="text-red-300 text-lg font-bold">没有公开审理，没有证人出庭辩护。判决结果：有期徒刑十年。这一纸冰冷的文书，不仅宣判了兰硕群肉体的放逐，更将兰氏家族上百名亲属拖入了长达三十年的政治连坐深渊。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Civilian Testimony -->
+                        <div id="testimony1" class="tab-content">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+                                <div class="md:col-span-7 space-y-8 order-2 md:order-1">
+                                    <h3 class="text-4xl font-black text-[#FDE68A] tracking-wide">底层乡民拒绝集体失忆</h3>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        历史的迷雾再厚，也遮不住亲历者的眼睛。1991年，当兰仲祥老人艰难地收集申诉证据时，那些曾经受过兰家恩惠、目睹过当年壮举的老乡们，颤抖着握起笔，写下了最朴素也最致命的证词。
+                                    </p>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        <strong>林荣龙</strong>在信纸上清清楚楚地写下：“三十年代……打听得知兰硕群去万县收兰庶康尸体去了...尸体回成佳那天，满街都在准备迎接。”这份证言，如同一记响亮的耳光，直接粉碎了判决书中暗示其“解放前反动”的政治定性。
+                                    </p>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        <strong>饶先郎</strong>更是按着红手印证实：“他曾率众痛打伪军军官，大长民众志气。”这些来自底层乡民最真实的呐喊，被压抑了几十年后，终于在档案纸上爆发。他们证明了被告席上站着的不是罪人，而是一位在乱世中挺身而出的侠客。
+                                    </p>
+                                </div>
+                                <div class="md:col-span-5 grid grid-cols-1 gap-6 order-1 md:order-2">
+                                    <div class="relative group">
+                                        <img src="1.jpg" alt="林荣龙证词" class="w-full rounded-xl border border-gray-600 shadow-[0_10px_30px_rgba(253,230,138,0.1)] cursor-zoom-in transition-transform duration-500 group-hover:scale-105" onclick="openModal(this.src, '1991年 林荣龙亲笔证实材料')">
+                                        <p class="text-center text-[#FDE68A] text-sm mt-3 font-bold tracking-widest">林荣龙证言 (1991)</p>
+                                    </div>
+                                    <div class="relative group mt-4">
+                                        <img src="8.jpg" alt="饶先郎证词" class="w-full rounded-xl border border-gray-600 shadow-[0_10px_30px_rgba(253,230,138,0.1)] cursor-zoom-in transition-transform duration-500 group-hover:scale-105" onclick="openModal(this.src, '1991年 饶先郎亲笔证实材料')">
+                                        <p class="text-center text-[#FDE68A] text-sm mt-3 font-bold tracking-widest">饶先郎证言 (1991)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Brother's Testimony -->
+                        <div id="testimony2" class="tab-content">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
+                                <div class="md:col-span-5 relative group">
+                                    <img src="兰克群申诉书.jpg" alt="兰克群证言" class="w-full rounded-xl shadow-[0_10px_40px_rgba(217,119,6,0.2)] border-2 border-[#D97706] cursor-zoom-in transition-transform duration-500 group-hover:scale-105" onclick="openModal(this.src, '1991年 胞弟兰克群泣血证实材料')">
+                                    <p class="text-center text-[#D97706] text-sm mt-4 font-bold tracking-widest">胞弟兰克群证词 (1991)</p>
+                                </div>
+                                <div class="md:col-span-7 space-y-8">
+                                    <h3 class="text-4xl font-black text-[#D97706] tracking-wide">“我们一起生，一起打”</h3>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        在所有物证中，最具法律效力也最令人心碎的，莫过于胞弟兰克群在1991年写下的这份证实材料。作为当年与兄长并肩作战对抗伪军的生死兄弟，他的证词如同惊雷，彻底掀翻了判决书中欲加之罪的底牌。
+                                    </p>
+                                    <p class="text-gray-300 leading-loose text-justify-custom text-xl">
+                                        他详细描述了兄弟二人如何默契配合：“兰硕群挺身而出……抓起碓窝棒打倒带头的，并顺势纵身上房……我与他配合，不到半小时打伤师管区士官十九个。这是一场以少胜多的恶战，更是为民除害之举！”每一个字都透着血性与骄傲。
+                                    </p>
+                                    <div class="bg-[#1f2937] p-8 rounded-2xl border-l-8 border-[#D97706] shadow-inner mt-6">
+                                        <p class="text-[#FDE68A] text-xl font-bold mb-4">代价的无情连坐：</p>
+                                        <p class="text-gray-400 text-lg leading-relaxed text-justify-custom">然而，覆巢之下，安有完卵。因为兄长的“反革命”帽子，曾一起保卫家乡的兰克群也惨遭连坐，半生抬不起头。直到十一届三中全会后的1979年，这位老人才颤抖着双手，等来了那份迟到太久的《摘掉帽子通知书》。弟弟等到了清白，而哥哥却早已化作西域黄沙。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据仪表盘：档案/客观风 -->
+        <section id="data" class="max-w-7xl mx-auto px-4 reveal">
+            <div class="text-center mb-20">
+                <span class="text-[#111827] font-black tracking-[0.3em] text-sm block mb-3 uppercase">Macro Data Dashboard</span>
+                <h2 class="section-title text-4xl md:text-5xl font-black text-gray-900 mb-8">岁月刻度：被拉长的苦难与坚守</h2>
+                <p class="text-gray-600 text-xl max-w-4xl mx-auto leading-relaxed">“客观的数据，往往比抒情的文字更具刺痛人心的力量。四十天的短促壮举，最终却要用一个家族近百年的岁月来偿还与抗争。”</p>
+            </div>
+
+            <div class="bg-white p-8 md:p-14 rounded-[3rem] shadow-2xl border border-gray-100 mb-16 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#B91C1C] via-[#111827] to-[#D97706]"></div>
+                <h3 class="text-2xl font-black text-gray-800 mb-8 text-center tracking-widest">历史事件时间跨度极限对比图</h3>
+                <div class="chart-container" style="height: 60vh;">
+                    <canvas id="impactChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <!-- 死亡通知 -->
+                <div class="bg-[#111827] text-white p-10 rounded-[2rem] shadow-2xl relative overflow-hidden group hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500">
+                    <div class="absolute right-0 top-0 w-48 h-48 opacity-[0.08] bg-[url('9.jpg')] bg-cover transition-transform duration-700 group-hover:scale-125 group-hover:opacity-20"></div>
+                    <div class="relative z-10 h-full flex flex-col">
+                        <span class="text-red-500 font-bold tracking-[0.3em] text-sm mb-4 block uppercase border-b border-red-900/50 pb-2">1961 · 物理的消亡</span>
+                        <h3 class="text-3xl font-black mb-6 leading-snug">迟到了半年的<br>死亡通知书</h3>
+                        <p class="text-gray-400 text-lg leading-loose text-justify-custom flex-grow">
+                            1961年的新疆沙湾，风沙漫天。兰硕群带着“历史反革命”的屈辱印记，孤独地咽下了最后一口气。几个月后的10月，一张薄如蝉翼、编号“勇亡字第281号”的通知书才辗转寄回四川老家。
+                        </p>
+                        <p class="text-red-400 font-bold mt-6 text-sm bg-red-900/30 p-4 rounded-lg">批注：“因不知道你们家庭地址，所以通知晚了，请保民谅”——这句轻飘飘的话，成为了家族永远无法愈合的致命伤口。</p>
+                    </div>
+                </div>
+                
+                <!-- 孤身北上 -->
+                <div class="bg-white text-gray-900 p-10 rounded-[2rem] shadow-xl border border-gray-200 relative overflow-hidden group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                    <div class="absolute right-0 top-0 w-48 h-48 opacity-[0.05] bg-[url('12.jpg')] bg-cover transition-transform duration-700 group-hover:scale-125 group-hover:opacity-10"></div>
+                    <div class="relative z-10 h-full flex flex-col">
+                        <span class="text-blue-800 font-bold tracking-[0.3em] text-sm mb-4 block uppercase border-b border-blue-100 pb-2">2008 · 不屈的长征</span>
+                        <h3 class="text-3xl font-black mb-6 leading-snug">一张二十元的<br>硬座火车票</h3>
+                        <p class="text-gray-600 text-lg leading-loose text-justify-custom flex-grow">
+                            2008年4月13日，成都至自贡，硬座，20元。这是一张被老人的汗水反复浸透、揉捏过的车票。75岁的兰仲祥，带着满头白发和一整包重达数斤的《再次申诉书》，再次踏上旅途。
+                        </p>
+                        <p class="text-blue-800 font-bold mt-6 text-sm bg-blue-50 p-4 rounded-lg">在北京西站巨大且冷漠的建筑前，他留下了最后的申诉剪影。他的身影显得如此渺小，却又像磐石般坚硬。55年的光阴，压不弯这铮铮铁骨。</p>
+                    </div>
+                </div>
+
+                <!-- 迟到平反 -->
+                <div class="bg-gradient-to-br from-[#FDFBF7] to-[#FFFBEB] text-gray-900 p-10 rounded-[2rem] shadow-xl border-2 border-[#D97706]/30 relative overflow-hidden group hover:border-[#D97706] transition-all duration-500">
+                    <div class="absolute right-0 top-0 w-48 h-48 opacity-[0.08] bg-[url('10.jpg')] bg-cover transition-transform duration-700 group-hover:scale-125 group-hover:opacity-20"></div>
+                    <div class="relative z-10 h-full flex flex-col">
+                        <span class="text-[#D97706] font-bold tracking-[0.3em] text-sm mb-4 block uppercase border-b border-[#D97706]/20 pb-2">2001 · 国家的确认</span>
+                        <h3 class="text-3xl font-black mb-6 leading-snug">那一枚绿色的<br>官方出席证</h3>
+                        <p class="text-gray-700 text-lg leading-loose text-justify-custom flex-grow">
+                            2001年，秋风送爽。兰仲祥与其弟兰天祥，作为当年冒死收尸的“革命烈士亲属”，正式受邀出席自贡市纪念辛亥革命暨吴玉章骨灰安放活动。大会首长们那一次次紧紧的握手致意，跨越了漫长的时空。
+                        </p>
+                        <p class="text-[#92400E] font-bold mt-6 text-sm bg-orange-100/50 p-4 rounded-lg">虽然迟到了近半个世纪，但正义的缺席，终究变成了迟到的回响。这张卡片，是对先辈壮举最崇高的国家级慰藉。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第四章：温情岁月/散文回忆风 -->
+        <section id="memoir" class="bg-white py-32 reveal border-t border-gray-100 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center mb-20">
+                    <span class="text-[#D97706] font-black tracking-[0.3em] text-sm block mb-3 uppercase">Chapter IV</span>
+                    <h2 class="section-title text-4xl md:text-5xl font-black text-gray-900 mb-8">光阴的回响：鸽哨、宪法与旧皮箱</h2>
+                    <p class="text-gray-500 italic text-xl max-w-4xl mx-auto leading-relaxed">“当厚重的卷宗合上，我们看到的不再只是苦难的暴烈，而是一位老人在绝境中对生活情致的倔强坚守，以及对法治近乎苛刻的纯粹信仰。”</p>
+                </div>
+
+                <div class="prose prose-xl max-w-none text-gray-700 mx-auto text-justify-custom leading-[2.2] space-y-10 font-light">
+                    <p class="indent-10">
+                        当尘埃落定，历史的硝烟散去，我们重新翻开这些被岁月摩挲得微微发脆的文件，看到的不仅仅是横眉冷对的抗争锋芒，更有一份令人动容的温情与深邃的智慧。最令人震撼的，是爷爷兰仲祥在极致的苦难中所保持的惊人理智与盎然的生活情致。
+                    </p>
+                    
+                    <div class="flex flex-col lg:flex-row gap-12 my-16 items-center bg-gray-50 p-8 md:p-12 rounded-[3rem] border border-gray-200">
+                        <div class="w-full lg:w-5/12 document-polaroid" style="--rotation: -3deg; padding-bottom: 15px;">
+                            <img src="爷爷养鸽子手写书1.jpg" alt="识鸽子手稿" class="w-full border border-gray-200 cursor-zoom-in" onclick="openModal(this.src, '兰仲祥手书《识鸽子》鉴赏手稿')">
+                            <p class="text-center text-xs font-bold text-gray-800 mt-4 tracking-widest">《识鸽子》手稿原件</p>
+                        </div>
+                        <div class="w-full lg:w-7/12 space-y-6">
+                            <h4 class="text-3xl font-black text-gray-900">未被吞噬的飞鸟</h4>
+                            <p class="text-lg">在那些最难熬的日子里，他的世界里不仅有冰冷绝望的法条，还有鸽子轻盈振翅的声音。在写下无数封字字泣血的申诉状的同时，他竟然还能用同一支钢笔，极其专业、细腻地写下这篇名为《识鸽子》的鉴赏手稿。</p>
+                            <p class="text-lg italic text-gray-500">“眼如火，底砂色素布列……”</p>
+                            <p class="text-lg">这些精妙考究的句子，在这几页蝇头小楷上跳跃。透过这些纸页，我们仿佛能看到那个哪怕历经半生沧桑，依然会背着手、抬头仰望天空、热爱世间万物的倔强老人。<strong class="text-[#D97706] font-black">苦难的深渊，终究未能彻底吞噬他的灵魂与眼底的光。</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row-reverse gap-12 my-16 items-center bg-white p-8 md:p-12 rounded-[3rem] shadow-xl border border-gray-100">
+                        <div class="w-full lg:w-5/12 document-polaroid" style="--rotation: 2deg; padding-bottom: 15px;">
+                            <img src="爷爷分房书.jpg" alt="分房协议" class="w-full border border-gray-200 cursor-zoom-in" onclick="openModal(this.src, '1995年 兰仲祥草拟的《房产划分》协议')">
+                            <p class="text-center text-xs font-bold text-gray-800 mt-4 tracking-widest">1995年宪法治家协议书</p>
+                        </div>
+                        <div class="w-full lg:w-7/12 space-y-6">
+                            <h4 class="text-3xl font-black text-gray-900">刻在骨子里的法治信仰</h4>
+                            <p class="text-lg">而更让人肃然起敬的，是他超越时代的法治精神。在1995年为子女起草《分房书》时，在那个偏远的中国乡村，他竟史无前例地将《中华人民共和国宪法》中关于子女赡养义务的条款，端端正正地抄写在家庭财产分割协议的最开头，作为全篇的总纲。</p>
+                            <p class="text-lg">半生的冤屈并没有让他变成一个仇视社会的莽夫。相反，他用一生的痛，换来了对“法治”最纯粹、最极致的信仰。他要用白纸黑字让子孙后代永远铭记：<strong class="text-[#B91C1C] font-black">家有家规，国必有法；哪怕受过天大的委屈，也不能丢了对底线和公理的敬畏。</strong>这就是他留给兰氏家族最坚固的铠甲。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 容颜变迁 -->
+                <div class="mt-32 pt-20 border-t-2 border-gray-100">
+                    <h3 class="text-center font-black text-3xl text-gray-900 mb-16 tracking-[0.3em]">【 岁 月 流 影 】</h3>
+                    <p class="text-center text-gray-500 mb-12 italic text-lg">“从青年干部的英气，到白发苍苍的孤勇，照片锁住了时光，也锁住了一个人的风骨。”</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div class="text-center group">
+                            <div class="overflow-hidden rounded-2xl shadow-xl mb-4 border-4 border-white group-hover:border-[#D97706] transition-all duration-500 cursor-zoom-in" onclick="openModal('爷爷照片2.jpg', '青年时期：青年干部的英气')"><img src="爷爷照片2.jpg" alt="青年" class="w-full grayscale group-hover:grayscale-0 transition duration-700 transform group-hover:scale-105"></div>
+                            <p class="text-sm font-black text-gray-800 tracking-widest">青年 · 干部的英气</p>
+                        </div>
+                        <div class="text-center group">
+                            <div class="overflow-hidden rounded-2xl shadow-xl mb-4 border-4 border-white group-hover:border-[#D97706] transition-all duration-500 cursor-zoom-in" onclick="openModal('爷爷照片3.jpg', '壮年时期：承压的脊梁')"><img src="爷爷照片3.jpg" alt="壮年" class="w-full grayscale group-hover:grayscale-0 transition duration-700 transform group-hover:scale-105"></div>
+                            <p class="text-sm font-black text-gray-800 tracking-widest">壮年 · 承压的脊梁</p>
+                        </div>
+                        <div class="text-center group">
+                            <div class="overflow-hidden rounded-2xl shadow-xl mb-4 border-4 border-white group-hover:border-[#D97706] transition-all duration-500 cursor-zoom-in" onclick="openModal('爷爷照片4.jpg', '中年时期：沉淀的儒雅')"><img src="爷爷照片4.jpg" alt="中年" class="w-full grayscale group-hover:grayscale-0 transition duration-700 transform group-hover:scale-105"></div>
+                            <p class="text-sm font-black text-gray-800 tracking-widest">中年 · 沉淀的儒雅</p>
+                        </div>
+                        <div class="text-center group">
+                            <div class="overflow-hidden rounded-2xl shadow-xl mb-4 border-4 border-white group-hover:border-[#D97706] transition-all duration-500 cursor-zoom-in" onclick="openModal('11.jpg', '晚年时期：白发的孤勇（摄于北京西站）')"><img src="11.jpg" alt="晚年" class="w-full grayscale group-hover:grayscale-0 transition duration-700 transform group-hover:scale-105"></div>
+                            <p class="text-sm font-black text-gray-800 tracking-widest">晚年 · 白发的孤勇</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 交互式物证画廊 -->
+        <section class="max-w-[90rem] mx-auto px-4 reveal pb-32">
+            <div class="text-center mb-16 bg-[#111827] text-white py-12 rounded-[2rem] shadow-2xl relative overflow-hidden">
+                <div class="absolute inset-0 pattern-dots opacity-20"></div>
+                <div class="relative z-10">
+                    <h2 class="text-4xl md:text-5xl font-black mb-6 tracking-widest">全宗卷物证陈列库</h2>
+                    <p class="text-gray-400 italic text-lg max-w-2xl mx-auto mb-10">点击图片可放大查看原件细节。历史的全部真相，皆隐藏于这些斑驳的纹理之中。</p>
+                    
+                    <!-- 过滤器 -->
+                    <div class="flex flex-wrap justify-center gap-4" id="gallery-filters">
+                        <button class="filter-btn active px-6 py-2 rounded-full border-2 border-transparent bg-white/10 hover:bg-white/20 text-white font-bold tracking-widest transition-all" data-filter="all">全 部 展 卷</button>
+                        <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-600 hover:border-white text-gray-300 font-bold tracking-widest transition-all" data-filter="doc">官方卷宗文书</button>
+                        <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-600 hover:border-white text-gray-300 font-bold tracking-widest transition-all" data-filter="witness">民间亲笔证言</button>
+                        <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-600 hover:border-white text-gray-300 font-bold tracking-widest transition-all" data-filter="life">家族生活笔迹</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8" id="gallery-grid">
+                <!-- Data attributes define categories -->
+                <div class="gallery-item document-polaroid" data-category="doc" style="--rotation: -2deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1955年 兰硕群错案判决书原件')">
+                    <div class="polaroid-img-box h-40"><img src="兰硕群判决.jpg" alt="判决书"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">1955 判决书</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="doc" style="--rotation: 1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1961年 兰硕群劳改犯人死亡通知书')">
+                    <div class="polaroid-img-box h-40"><img src="9.jpg" alt="死亡通知"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">1961 死亡通知</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="doc" style="--rotation: -1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1979年 胞弟兰克群摘掉右派/反革命帽子通知书')">
+                    <div class="polaroid-img-box h-40"><img src="兰克群 摘帽子通知书.jpg" alt="平反通知"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">1979 胞弟平反</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="doc" style="--rotation: 3deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '2001年 辛亥革命纪念活动官方出席证')">
+                    <div class="polaroid-img-box h-40"><img src="10.jpg" alt="出席证"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">2001 官方出席证</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="doc" style="--rotation: -3deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '2008年4月13日 兰仲祥北上申诉20元硬座车票')">
+                    <div class="polaroid-img-box h-40"><img src="12.jpg" alt="火车票"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">2008 申诉车票</p>
+                </div>
+
+                <div class="gallery-item document-polaroid" data-category="witness" style="--rotation: 2deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1991年 林荣龙证实材料手稿')">
+                    <div class="polaroid-img-box h-40"><img src="1.jpg" alt="林荣龙"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">林荣龙证词</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="witness" style="--rotation: -2deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1991年 饶先郎证实材料手稿')">
+                    <div class="polaroid-img-box h-40"><img src="8.jpg" alt="饶先郎"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">饶先郎证词</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="witness" style="--rotation: 1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1991年 胞弟兰克群泣血证实材料')">
+                    <div class="polaroid-img-box h-40"><img src="兰克群申诉书.jpg" alt="兰克群"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">胞弟证词</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="witness" style="--rotation: -1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1986年 太婆龚文成致叶剑英元帅亲笔信')">
+                    <div class="polaroid-img-box h-40"><img src="太婆申诉书1.jpg" alt="太婆"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">太婆亲书</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="witness" style="--rotation: 2deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '2007年 兰仲祥与法院交涉案件流转手记')">
+                    <div class="polaroid-img-box h-40"><img src="申诉5.jpg" alt="申诉草稿"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">法院沟通手记</p>
+                </div>
+
+                <div class="gallery-item document-polaroid" data-category="life" style="--rotation: -2deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '家族早期历史脉络手稿记录')">
+                    <div class="polaroid-img-box h-40"><img src="遗迹手稿.jpg" alt="早期手稿"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">家族早期手记</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="life" style="--rotation: 3deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '兰仲祥《识鸽子》鉴赏手稿续页')">
+                    <div class="polaroid-img-box h-40"><img src="爷爷养鸽子手写书2.jpg" alt="识鸽子"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">识鸽子续页</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="life" style="--rotation: -1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1995年 融合国家宪法条款的《房产划分书》')">
+                    <div class="polaroid-img-box h-40"><img src="爷爷分房书.jpg" alt="分房书"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">宪法治家书</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="life" style="--rotation: 1deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '2001年 兰仲祥与兰天祥出席活动现场合影')">
+                    <div class="polaroid-img-box h-40"><img src="爷爷照片5.jpg" alt="合影" style="object-position: top;"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">晚年合影</p>
+                </div>
+                <div class="gallery-item document-polaroid" data-category="life" style="--rotation: -3deg; padding-bottom: 25px;" onclick="openModal(this.querySelector('img').src, '1987年 兰仲祥长期居留身份证明原件')">
+                    <div class="polaroid-img-box h-40"><img src="爷爷照片1.jpg" alt="证件"></div>
+                    <p class="text-xs text-center font-black text-gray-800 mt-2 tracking-widest">1987 证件</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 结尾 -->
+    <footer class="bg-[#0f172a] text-white py-24 text-center border-t-[12px] border-[#B91C1C] relative overflow-hidden">
+        <div class="absolute inset-0 pattern-grid opacity-10"></div>
+        <div class="max-w-4xl mx-auto px-6 relative z-10">
+            <h3 class="text-4xl md:text-5xl font-serif mb-10 text-[#FDE68A] tracking-[0.2em] font-black">正义也许会迟到<br><span class="text-3xl md:text-4xl block mt-4 text-white">但回响必将永存</span></h3>
+            <p class="text-gray-400 text-lg leading-loose italic mb-16 max-w-2xl mx-auto">
+                “时间像一条无声的长河，它冲刷掉血迹，也可能掩埋掉真相。但只要这些纸页还在，只要这股刻在骨子里的倔强还在，那些被时代车轮碾压过的碎骨，终将重新拼凑出一座傲然挺立的丰碑。”
+            </p>
+            <div class="h-px w-32 bg-gray-600 mx-auto mb-10"></div>
+            <div class="text-[10px] md:text-xs uppercase tracking-[0.5em] text-gray-500 font-bold">
+                LAN FAMILY MEMORIAL ARCHIVE © 2026<br><br>档案整理与视界重构：兰凯
+            </div>
+        </div>
+    </footer>
+
+    <!-- 增强版 Image Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-black/95 z-[100] hidden flex-col justify-center items-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <span class="absolute top-6 right-6 text-white text-5xl cursor-pointer hover:text-red-500 transition-colors z-50" onclick="closeModal()">&times;</span>
+        <div class="relative max-w-5xl w-full flex flex-col items-center">
+            <img id="modal-img" src="" alt="Artifact Zoom" class="max-h-[80vh] max-w-full object-contain shadow-[0_0_50px_rgba(255,255,255,0.1)] rounded border border-gray-800">
+            <div class="mt-6 bg-black/50 px-8 py-3 rounded-full border border-gray-700 backdrop-blur">
+                <p id="modal-caption" class="text-[#FDE68A] text-base md:text-lg font-black tracking-widest text-center"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 1. 滚动揭示动画
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+            // 2. 导航栏滚动效果
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    nav.classList.add('shadow-2xl');
+                    nav.classList.replace('bg-[#111827]/95', 'bg-[#111827]');
+                } else {
+                    nav.classList.remove('shadow-2xl');
+                    nav.classList.replace('bg-[#111827]', 'bg-[#111827]/95');
+                }
+            });
+
+            // 3. 渲染 Chart.js 岁月刻度图表 (增强视觉效果)
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            Chart.defaults.font.family = "'Noto Serif SC', serif";
+            Chart.defaults.color = '#4B5563';
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['大义壮举\n(收尸/击敌)', '莫须有罪名\n服刑牢狱', '政治连坐\n亲族受难', '不屈抗争\n跨世纪申诉'],
+                    datasets: [{
+                        label: '时长刻度 (年)',
+                        data: [0.15, 10, 30, 55], // 使用0.15代表极短时间，方便图表显示
+                        backgroundColor: [
+                            'rgba(185, 28, 28, 0.85)',   // 红色: 壮举
+                            'rgba(17, 24, 39, 0.85)',    // 黑色: 牢狱
+                            'rgba(217, 119, 6, 0.85)',   // 橙色: 连坐
+                            'rgba(30, 58, 138, 0.85)'    // 蓝色: 申诉
+                        ],
+                        borderColor: [
+                            '#991B1B', '#000000', '#B45309', '#1E3A8A'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        hoverBackgroundColor: [
+                            'rgba(185, 28, 28, 1)',
+                            'rgba(17, 24, 39, 1)',
+                            'rgba(217, 119, 6, 1)',
+                            'rgba(30, 58, 138, 1)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleFont: { size: 16, weight: 'bold', family: "'Noto Serif SC', serif" },
+                            bodyFont: { size: 15, family: "'Noto Serif SC', serif" },
+                            padding: 16,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    if (context.dataIndex === 0) return '真实耗时：约 40 天 (极短的瞬间，却埋下祸根)';
+                                    return `历史耗时：整整 ${value} 年 (漫长而绝望的岁月)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '折损的时间跨度 (单位：年)', font: {weight: '900', size: 14} },
+                            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                            ticks: { font: {weight: 'bold', size: 14} }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: {weight: '900', size: 14} }
+                        }
+                    }
+                }
+            });
+
+            // 4. 画廊过滤逻辑 (增加平滑动画)
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const galleryItems = document.querySelectorAll('.gallery-item');
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active button state
+                    filterBtns.forEach(b => {
+                        b.classList.remove('active', 'bg-white/10', 'border-transparent', 'text-white');
+                        b.classList.add('border-gray-600', 'text-gray-300');
+                    });
+                    btn.classList.add('active', 'bg-white/10', 'border-transparent', 'text-white');
+                    btn.classList.remove('border-gray-600', 'text-gray-300');
+
+                    const filterValue = btn.getAttribute('data-filter');
+
+                    // Filter items
+                    galleryItems.forEach(item => {
+                        if (filterValue === 'all' || item.getAttribute('data-category') === filterValue) {
+                            item.style.display = 'block';
+                            setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'scale(1) rotate(' + item.style.getPropertyValue('--rotation') + ')'; }, 50);
+                        } else {
+                            item.style.opacity = '0';
+                            item.style.transform = 'scale(0.8) rotate(0deg)';
+                            setTimeout(() => { item.style.display = 'none'; }, 500);
+                        }
+                    });
+                });
+            });
+
+            // Handle missing images gracefully
+            document.querySelectorAll('img').forEach(img => {
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    let parent = this.parentElement;
+                    if(parent && parent.classList.contains('polaroid-img-box')) {
+                        parent.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs font-bold tracking-widest">原件影像缺失</div>';
+                    }
+                };
+            });
+        });
+
+        // 全局 Tab 切换函数
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'bg-[#B91C1C]', 'text-white', 'border-[#B91C1C]', 'shadow-[0_4px_14px_rgba(185,28,28,0.4)]');
+                el.classList.add('border-gray-600');
+            });
+            
+            // Show selected
+            document.getElementById(tabId).classList.add('active');
+            
+            const activeBtn = event.currentTarget;
+            activeBtn.classList.remove('border-gray-600');
+            activeBtn.classList.add('active', 'bg-[#B91C1C]', 'text-white', 'border-[#B91C1C]', 'shadow-[0_4px_14px_rgba(185,28,28,0.4)]');
+        }
+
+        // Modal / Lightbox Logic
+        function openModal(imageSrc, captionText) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const modalCaption = document.getElementById('modal-caption');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Trigger reflow for fade in
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            modal.classList.add('opacity-100');
+            
+            modalImg.src = imageSrc;
+            modalCaption.textContent = captionText || '珍贵历史档案';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('image-modal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300); // match transition duration
+        }
+        
+        // Close modal on outside click
+        document.getElementById('image-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Handle ESC key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
