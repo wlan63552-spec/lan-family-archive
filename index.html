@@ -797,22 +797,53 @@
             }
         });
         
-        // Handle ESC key to close modal
-        document.addEventListener('keydown', function(event) {
-            if (event.key === "Escape") {
-                closeModal();
-            }
-        });
-    </script>
-    <div style="margin: 20px auto; max-width: 800px; padding: 15px; background: rgba(139,0,0,0.03); border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-    <p style="margin: 0 0 10px 0; font-size: 14px; color: #8b0000; font-weight: bold;">
-        🎵 岁月回响：请开启音乐阅读心路历程
-    </p>
-    <audio id="bgm" src="bgm.mp3" controls style="width: 100%; height: 35px;"></audio>
-    <p style="margin: 8px 0 0 0; font-size: 11px; color: #9ca3af;">若未自动播放，请点击上方播放键</p>
-</div>
-    <div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
+     <div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
     <h2 style="color: #8b0000; text-align: center;">兰氏百年卷宗：一场跨越时空的数字守望</h2>
+    <p><b>这不仅仅是一个网页，更是一段被重新打捞起的家族灵魂。</b></p>
+    <p>当我第一次翻开那些泛黄的档案，看着兰硕群公在1935年孤勇徒步四十天为烈士收尸的记载，看着那份写满时代错位的1955年判决书，我意识到，这些文字不该只躺在抽屉的角落里渐渐腐朽。它们是骨气，是公道，是兰氏子孙血脉里流淌的不屈。</p>
+    <p><b>起初，我只是想让这些记忆“被看见”。</b><br>
+    要把零散的纸质证明变成交互式的数字展厅，远比想象中困难。从整理二十余张珍贵影像，到推敲每一段史实的描述；从反复修改网页代码，到无数次面对报错时的束手无策。在代码与文件夹的迷宫里，我也曾感到疲惫，但每当看到爷爷亲笔手稿，看到那张20元的硬座车票，一种责任感便催促着我继续走下去。</p>
+    <p><b>最难的不是技术，而是对历史的敬畏。</b><br>
+    在搭建的过程中，我仿佛与先辈们进行了一场长达百年的对话。每一次点击、每一处排版，都是在试图还原那段厚重的史诗。当最后一串代码敲定，当“兰氏家族纪念馆”的网址正式上线的那一刻，我知道，这些属于先辈的荣光与苦难，终于有了一个永不落幕的港湾。</p>
+    <p style="text-align: right; font-style: italic;">—— 谨以此馆，献给兰氏家族不屈的先辈</p>
+</div>
+
+<audio id="familyAudio" loop>
+    <source src="bgm.mp3" type="audio/mpeg">
+</audio>
+
+<div id="musicStatus" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(139,0,0,0.8); color: white; padding: 8px 15px; border-radius: 50px; font-size: 12px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-family: sans-serif;">
+    🎵 点击开启岁月回响
+</div>
+
+<script>
+    const audio = document.getElementById('familyAudio');
+    const statusBtn = document.getElementById('musicStatus');
+    
+    function tryAutoplay() {
+        audio.play().then(() => {
+            statusBtn.innerHTML = "🎵 正在播放";
+        }).catch(error => {
+            statusBtn.innerHTML = "🎵 点击开启音乐";
+        });
+    }
+
+    // 监听用户在页面上的任何交互，一旦触碰即刻播放
+    document.addEventListener('touchstart', tryAutoplay, { once: true });
+    document.addEventListener('click', tryAutoplay, { once: true });
+
+    // 悬浮按钮点击开关
+    statusBtn.onclick = function(e) {
+        e.stopPropagation(); // 防止触发上面的全局点击事件
+        if (audio.paused) {
+            audio.play();
+            statusBtn.innerHTML = "🎵 正在播放";
+        } else {
+            audio.pause();
+            statusBtn.innerHTML = "🎵 音乐已暂停";
+        }
+    };
+</script>
     <p><b>这不仅仅是一个网页，更是一段被重新打捞起的家族灵魂。</b></p>
     <p>当我第一次翻开那些泛黄的档案，看着兰硕群公在1935年孤勇徒步四十天为烈士收尸的记载，看着那份写满时代错位的1955年判决书，我意识到，这些文字不该只躺在抽屉的角落里渐渐腐朽。它们是骨气，是公道，是兰氏子孙血脉里流淌的不屈。</p>
     <p><b>起初，我只是想让这些记忆“被看见”。</b><br>
