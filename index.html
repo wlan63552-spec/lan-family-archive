@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>兰氏卷宗：岁月如碑百年史诗</title>
+    <meta name="description" content="四川荣县成佳兰氏家族史料考证：一场跨越半个世纪、至死方休的民间法理交锋。">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700;900&display=swap');
 
@@ -18,14 +18,12 @@
             overflow-x: hidden;
         }
 
-        /* 网页装饰纹理 */
         .pattern-grid {
             background-image: linear-gradient(rgba(217, 119, 6, 0.05) 1px, transparent 1px),
             linear-gradient(90deg, rgba(217, 119, 6, 0.05) 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        /* 拍立得卡片效果 */
         .document-polaroid {
             background: #ffffff;
             padding: 12px 12px 35px 12px;
@@ -55,7 +53,6 @@
             object-fit: cover;
         }
 
-        /* 揭示动画逻辑 */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
@@ -78,63 +75,105 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        #backToTop {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 999;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #8b0000;
+            color: #8b0000;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
         /* =========================================
-           核心修复：纸质书打印与PDF导出方案
+           核心修复：解决PDF空白与显示不全
            ========================================= */
         @media print {
-            /* 1. 隐藏干扰元素 */
-            #navbar, #musicStatus, audio, video, button, .filter-btn, .tab-btn, .no-print, .animate-bounce {
+            #navbar, #musicStatus, audio, video, button, .filter-btn, .tab-btn, .no-print, .animate-bounce, #backToTop {
                 display: none !important;
             }
-
-            /* 2. 强制全员反色：背景白，文字黑，解决白字隐形 */
+            
+            /* 强制重置透明度，解决由于动画未触发导致的图片消失 */
             * {
+                opacity: 1 !important;
+                visibility: visible !important;
                 background: white !important;
                 color: black !important;
                 box-shadow: none !important;
                 text-shadow: none !important;
-                filter: none !important;
+                transform: none !important;
+                transition: none !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
-            /* 3. 彻底强制显示：无视所有 opacity:0 或 transform */
-            .reveal, .gallery-item, .tab-content, div, section, header, main, p, img {
-                opacity: 1 !important;
-                visibility: visible !important;
-                transform: none !important;
-                display: block !important;
-                transition: none !important;
+            /* 消除全屏高度导致的巨大空白页 */
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+                background: white !important;
             }
 
-            /* 4. 布局重置：去掉全屏高度和过大边距 */
-            header, section, main {
+            header, section, main, div {
                 min-height: 0 !important;
                 height: auto !important;
                 padding: 10px 0 !important;
                 margin: 0 !important;
-                page-break-inside: auto !important;
-            }
-            
-            /* 5. 标题优化：缩小间距防止产生空白页 */
-            h1, h2, h3 {
-                margin-top: 20px !important;
-                margin-bottom: 10px !important;
-                page-break-after: avoid;
+                position: static !important;
             }
 
-            /* 6. 图片与卡片：防止被截断在两页中间 */
-            img, .document-polaroid {
+            /* 核心：防止板块被分页切断 */
+            section, .document-polaroid, .bg-white, .tab-content {
                 page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-bottom: 20px !important;
+                display: block !important;
+            }
+
+            /* 强制展开所有Tab内容供打印 */
+            .tab-content {
+                display: block !important;
+                opacity: 1 !important;
+            }
+
+            /* 修复图片裁剪问题 */
+            .polaroid-img-box {
+                height: auto !important;
+                max-height: none !important;
+            }
+            img {
+                height: auto !important;
+                max-height: 400px !important; /* 限制最大高度防止单张图占满全页 */
+                width: auto !important;
+                max-width: 100% !important;
+                display: block !important;
+                margin: 0 auto !important;
+            }
+
+            /* 缩小边距让内容更紧凑 */
+            .py-24, .py-16, .space-y-24 {
+                padding-top: 15px !important;
+                padding-bottom: 15px !important;
+            }
+            .max-w-7xl, .max-w-4xl {
                 max-width: 100% !important;
             }
-            
-            /* 7. 解决溢出导致的截断 */
-            html, body {
-                overflow: visible !important;
-                height: auto !important;
+
+            /* 强制黑底白字部分反转 */
+            .bg-[#111827], .bg-black {
                 background: white !important;
+                border: 1px solid #eee !important;
             }
+            p, h1, h2, h3, h4 { color: black !important; }
         }
     </style>
 </head>
@@ -176,8 +215,12 @@
                     <p>1935年寒冬，兰硕群挺身而出，只身赴万县为革命烈士兰庶康收尸。四十个日夜的风餐露宿，他硬是将义与胆背回了故乡。1945年，他再次率众击退欺凌乡邻的伪军。在那血雨腥风的岁月里，他是一座庇护乡邻、坚不可摧的丰碑。</p>
                 </div>
                 <div class="lg:col-span-5 grid grid-cols-2 gap-4">
-                    <div class="document-polaroid" style="--rotation: -2deg"><img src="遗迹手稿.jpg" class="w-full h-40 object-cover"></div>
-                    <div class="document-polaroid" style="--rotation: 2deg"><img src="太婆申诉书1.jpg" class="w-full h-40 object-cover"></div>
+                    <div class="document-polaroid" style="--rotation: -2deg" onclick="openModal('遗迹手稿.jpg', '家族纪实手稿')">
+                        <img src="遗迹手稿.jpg" class="w-full h-40 object-cover">
+                    </div>
+                    <div class="document-polaroid" style="--rotation: 2deg" onclick="openModal('太婆申诉书1.jpg', '太婆龚文成申诉亲笔')">
+                        <img src="太婆申诉书1.jpg" class="w-full h-40 object-cover">
+                    </div>
                 </div>
             </div>
         </section>
@@ -188,19 +231,19 @@
                 <h2 class="text-4xl font-black text-center mb-12 text-[#FDE68A]">代号314：一场荒诞的交锋</h2>
                 <div class="bg-black/40 border border-gray-700 rounded-[2rem] p-8">
                     <div class="flex justify-center gap-4 mb-10 no-print">
-                        <button class="tab-btn active px-6 py-2 rounded bg-[#B91C1C] text-sm" onclick="switchTab('verdict')">🔒 官方判决</button>
-                        <button class="tab-btn px-6 py-2 rounded border border-gray-600 text-sm" onclick="switchTab('testimony1')">🔍 民间证言</button>
+                        <button class="tab-btn active px-6 py-2 rounded bg-[#B91C1C] text-sm" onclick="switchTab('verdict', this)">🔒 官方判决</button>
+                        <button class="tab-btn px-6 py-2 rounded border border-gray-600 text-sm" onclick="switchTab('testimony1', this)">🔍 民间证言</button>
                     </div>
-                    <!-- 打印时会自动展开下面两个内容 -->
+                    <!-- 打印模式下两个内容都会自动显示 -->
                     <div id="verdict" class="tab-content active mb-12">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                            <img src="兰硕群判决.jpg" class="md:col-span-5 rounded-lg border border-gray-600">
+                            <img src="兰硕群判决.jpg" class="md:col-span-5 rounded-lg border border-gray-600 cursor-zoom-in" onclick="openModal(this.src, '1955年 (55)刑字第314号判决书')">
                             <div class="md:col-span-7"><p class="text-gray-300 text-lg leading-relaxed">1955年，(55)刑字第314号判决书以“未栽秧子”等微小罪名，将义士定性为“历史反革命”。这一纸文书，将兰氏家族拖入了长达三十年的深渊。</p></div>
                         </div>
                     </div>
                     <div id="testimony1" class="tab-content">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-t border-gray-700 pt-8 mt-8 md:border-0 md:pt-0 md:mt-0">
-                            <img src="1.jpg" class="md:col-span-5 rounded-lg border border-gray-600">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-t border-gray-800 pt-8">
+                            <img src="1.jpg" class="md:col-span-5 rounded-lg border border-gray-600 cursor-zoom-in" onclick="openModal(this.src, '乡民林荣龙证实材料')">
                             <div class="md:col-span-7"><p class="text-gray-300 text-lg leading-relaxed">1991年，乡民林荣龙、饶先郎等纷纷按红手印证实兰硕群当年的壮举，粉碎了判决书中的欲加之罪。</p></div>
                         </div>
                     </div>
@@ -208,7 +251,7 @@
             </div>
         </section>
 
-        <!-- 第三章：图表数据 -->
+        <!-- 第三章：数据 -->
         <section id="data" class="max-w-7xl mx-auto px-4 reveal">
             <div class="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100">
                 <h3 class="text-xl font-black text-gray-800 mb-8 text-center tracking-widest">岁月刻度对比</h3>
@@ -224,67 +267,66 @@
                     <p>兰仲祥老人在极端的苦难中仍保持着对生活的热爱，他钻研《识鸽子》鉴赏，更将《宪法》条款写进分房协议，用一生的痛换来了对法治最纯粹的信仰。</p>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-                    <img src="爷爷照片2.jpg" class="rounded-lg shadow border-2 border-white">
-                    <img src="爷爷照片3.jpg" class="rounded-lg shadow border-2 border-white">
-                    <img src="爷爷照片4.jpg" class="rounded-lg shadow border-2 border-white">
-                    <img src="11.jpg" class="rounded-lg shadow border-2 border-white">
+                    <img src="爷爷照片2.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '青年兰仲祥')">
+                    <img src="爷爷照片3.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '壮年兰仲祥')">
+                    <img src="爷爷照片4.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '中年兰仲祥')">
+                    <img src="11.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '晚年兰仲祥于北京')">
                 </div>
             </div>
         </section>
 
-        <!-- 画廊展卷 -->
+        <!-- 画廊 -->
         <section class="max-w-7xl mx-auto px-4 reveal pb-10">
             <h2 class="text-2xl font-black text-center mb-10 tracking-widest">全宗卷物证陈列</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <div class="document-polaroid"><img src="兰硕群判决.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="9.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="兰克群 摘帽子通知书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="10.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="12.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="1.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="8.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="兰克群申诉书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="爷爷养鸽子手写书1.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="爷爷分房书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="爷爷照片5.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid"><img src="爷爷照片1.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('兰硕群判决.jpg', '1955 判决书')"><img src="兰硕群判决.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('9.jpg', '1961 死亡通知书')"><img src="9.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('兰克群 摘帽子通知书.jpg', '1979 摘帽通知书')"><img src="兰克群 摘帽子通知书.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('10.jpg', '官方出席证')"><img src="10.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('12.jpg', '2008 申诉火车票')"><img src="12.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('1.jpg', '林荣龙证言')"><img src="1.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('8.jpg', '饶先郎证言')"><img src="8.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('兰克群申诉书.jpg', '胞弟兰克群证词')"><img src="兰克群申诉书.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('爷爷养鸽子手写书1.jpg', '识鸽子手稿')"><img src="爷爷养鸽子手写书1.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('爷爷分房书.jpg', '宪法治家书')"><img src="爷爷分房书.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('爷爷照片5.jpg', '晚年合影')"><img src="爷爷照片5.jpg" class="w-full h-32 object-cover"></div>
+                <div class="document-polaroid" onclick="openModal('爷爷照片1.jpg', '1987 身份证明')"><img src="爷爷照片1.jpg" class="w-full h-32 object-cover"></div>
             </div>
         </section>
     </main>
 
-    <!-- 心路历程 -->
     <div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 40px; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
         <h2 style="color: #8b0000; text-align: center; margin-bottom: 20px;">兰氏百年卷宗：一场跨越时空的数字守望</h2>
-        <p><b>这不仅仅是一个网页，更是一段被重新打捞起的家族灵魂。</b></p>
-        <p>当我第一次翻开那些泛黄的档案，看着兰硕群公在1935年孤勇徒步四十天为烈士收尸的记载，看着那份写满时代错位的1955年判决书，我意识到，这些文字不该只躺在抽屉的角落里渐渐腐朽。</p>
-        <p>在搭建的过程中，我仿佛与先辈们进行了一场长达百年的对话。当最后一串代码敲定，当“兰氏家族纪念馆”的网址正式上线的那一刻，我知道，这些属于先辈的荣光与苦难，终于有了一个永不落幕的港湾。</p>
+        <p>这一段段被重新打捞起的家族灵魂，不仅仅是文字，更是骨气。从收尸壮举到错位判决，先辈们用行动定义了公道。</p>
         <p style="text-align: right; font-style: italic; margin-top: 20px;">—— 谨以此馆，献给兰氏家族不屈的先辈</p>
     </div>
 
-    <!-- 视频放映厅 -->
     <div class="max-w-3xl mx-auto my-12 p-6 bg-white border border-gray-200 rounded-2xl shadow-lg text-center">
         <h3 style="color: #8b0000; margin-bottom: 15px; font-weight: bold;">【 珍 贵 影 像 · 岁 月 留 影 】</h3>
         <video src="jinian.mp4" controls preload="metadata" style="width: 100%; border-radius: 10px; background: #000;"></video>
-        <p class="text-sm text-gray-500 mt-4 italic">点击画面，开启一段鲜活的家族记忆</p>
     </div>
 
     <footer class="bg-[#0f172a] text-white py-12 text-center border-t-8 border-[#B91C1C]">
         <div class="text-[10px] uppercase tracking-[0.4em] text-gray-500 font-bold">LAN FAMILY MEMORIAL ARCHIVE © 2026</div>
     </footer>
 
-    <!-- 音乐组件 -->
+    <div id="image-modal" class="fixed inset-0 bg-black/95 z-[200] hidden flex flex-col justify-center items-center p-4 transition-opacity" onclick="closeModal()">
+        <img id="modal-img" src="" class="max-h-[85vh] max-w-full rounded shadow-2xl">
+        <p id="modal-caption" class="mt-4 text-[#FDE68A] font-bold text-center"></p>
+    </div>
+
+    <div id="backToTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</div>
+
     <audio id="familyAudio" loop><source src="bgm.mp3" type="audio/mpeg"></audio>
-    <div id="musicStatus" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(139,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 12px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">🎵 点击开启岁月回响</div>
+    <div id="musicStatus" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(139,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 12px; cursor: pointer;">🎵 点击开启岁月回响</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 揭示动画初始化
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
             }, { threshold: 0.1 });
             document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
-            // 图表渲染
             const ctx = document.getElementById('impactChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
@@ -298,22 +340,30 @@
                 },
                 options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
+
+            window.addEventListener('scroll', () => {
+                document.getElementById('backToTop').style.opacity = window.scrollY > 500 ? "1" : "0";
+            });
         });
 
-        // 标签切换
-        function switchTab(tabId) {
+        function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'bg-[#B91C1C]'));
             document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active', 'bg-[#B91C1C]');
+            btn.classList.add('active', 'bg-[#B91C1C]');
         }
 
-        // 音乐控制
+        function openModal(src, caption) {
+            document.getElementById('modal-img').src = src;
+            document.getElementById('modal-caption').textContent = caption;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('image-modal').classList.add('hidden'); }
+
         const audio = document.getElementById('familyAudio');
         const statusBtn = document.getElementById('musicStatus');
-        function tryPlay() { audio.play().then(() => { statusBtn.innerHTML = "🎵 正在播放"; }).catch(()=>{}); }
-        document.addEventListener('click', tryPlay, { once: true });
-        statusBtn.onclick = function(e) {
+        document.addEventListener('click', () => { audio.play().then(() => { statusBtn.innerHTML = "🎵 正在播放"; }); }, { once: true });
+        statusBtn.onclick = (e) => {
             e.stopPropagation();
             if (audio.paused) { audio.play(); statusBtn.innerHTML = "🎵 正在播放"; }
             else { audio.pause(); statusBtn.innerHTML = "🎵 已暂停"; }
