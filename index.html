@@ -2,372 +2,504 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>兰氏卷宗：岁月如碑百年史诗</title>
-    <meta name="description" content="四川荣县成佳兰氏家族史料考证：一场跨越半个世纪、至死方休的民间法理交锋。">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>兰氏卷宗：百年史诗终极典藏版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700;900&display=swap');
 
+        :root {
+            --bg-master: #020617;
+            --accent: #B91C1C;
+        }
+
         body {
-            background-color: #FDFBF7;
+            background-color: var(--bg-master);
             font-family: 'Noto Serif SC', serif;
-            color: #1a202c;
-            scroll-behavior: smooth;
-            overflow-x: hidden;
-        }
-
-        .pattern-grid {
-            background-image: linear-gradient(rgba(217, 119, 6, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(217, 119, 6, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        .document-polaroid {
-            background: #ffffff;
-            padding: 12px 12px 35px 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            transform: rotate(var(--rotation, -1deg));
-            transition: all 0.4s;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid #f3f4f6;
-        }
-        .document-polaroid:hover {
-            transform: rotate(0deg) scale(1.05);
-            z-index: 50;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
-        }
-        .polaroid-img-box {
-            width: 100%;
-            height: 220px;
+            color: #f1f5f9;
+            transition: background-color 2s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
-            background-color: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 12px;
-        }
-        .polaroid-img-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s ease-out;
+        /* 物理纸张质感 */
+        .paper-tactile {
+            background-color: #FDFBF7;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z' fill='%23d1d5db' fill-opacity='0.15'/%3E%3C/svg%3E"),
+                linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.5));
+            box-shadow: 0 30px 60px -10px rgba(0,0,0,0.5);
+            color: #0f172a;
         }
-        .reveal.active {
+
+        /* 放大镜效果（仅桌面端） */
+        #glass {
+            width: 150px; height: 150px;
+            border: 3px solid #FDE68A;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background-repeat: no-repeat;
+        }
+
+        /* 章节解密动画 - 移动端减小缩放幅度 */
+        .locked-layer {
+            opacity: 0;
+            filter: blur(20px) brightness(0.5);
+            max-height: 0;
+            overflow: hidden;
+            transition: all 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(30px);
+        }
+        .locked-layer.unlocked {
             opacity: 1;
+            filter: blur(0) brightness(1);
+            max-height: 15000px;
+            margin-bottom: 50px;
             transform: translateY(0);
         }
 
-        .drop-cap::first-letter {
-            font-size: 3.5em;
-            font-weight: 900;
-            float: left;
-            margin-right: 0.1em;
-            color: #B91C1C;
-            line-height: 0.85;
-        }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        #backToTop {
+        /* 时间轴指南针 - 移动端靠右下 */
+        #timeline-nav {
             position: fixed;
-            bottom: 80px;
-            right: 20px;
-            z-index: 999;
-            background: rgba(255,255,255,0.9);
-            border: 1px solid #8b0000;
-            color: #8b0000;
-            width: 40px;
-            height: 40px;
+            right: 15px; top: 50%;
+            transform: translateY(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            transition: 1s;
+        }
+        @media (min-width: 768px) {
+            #timeline-nav { left: 30px; right: auto; gap: 20px; }
+        }
+        .nav-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: 0.4s;
+            position: relative;
+        }
+        .nav-dot.active { background: #FDE68A; box-shadow: 0 0 10px #FDE68A; }
+
+        /* 盖章动画 - 移动端缩小尺寸 */
+        .seal-mark {
+            width: 80px; height: 80px;
+            border: 4px double #B91C1C;
             border-radius: 50%;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+            align-items: center; justify-content: center;
+            color: #B91C1C;
+            font-weight: 900; font-size: 14px;
+            transform: scale(5) rotate(90deg);
             opacity: 0;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 2);
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(185, 28, 28, 0.03);
+            pointer-events: none;
+        }
+        @media (min-width: 768px) {
+            .seal-mark { width: 110px; height: 110px; font-size: 18px; top: 50px; right: 50px; }
+        }
+        .seal-mark.active {
+            opacity: 0.8;
+            transform: scale(1) rotate(-15deg);
+        }
+
+        /* 扫描激光线 */
+        .laser-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #B91C1C, transparent);
+            box-shadow: 0 0 15px #B91C1C;
+            animation: laserMove 5s linear infinite;
+        }
+        @keyframes laserMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+
+        /* 脚注 */
+        .footnote {
+            text-decoration: underline dotted #B91C1C;
+            cursor: help;
+            color: #B91C1C;
+            font-weight: 700;
+        }
+
+        /* 祈愿星火墙 */
+        .prayer-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(253, 230, 138, 0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            cursor: pointer;
             transition: 0.3s;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .prayer-tag { padding: 15px 25px; font-size: 14px; }
         }
 
-        /* =========================================
-           核心修复：解决PDF空白与显示不全
-           ========================================= */
-        @media print {
-            #navbar, #musicStatus, audio, video, button, .filter-btn, .tab-btn, .no-print, .animate-bounce, #backToTop {
-                display: none !important;
-            }
-            
-            /* 强制重置透明度，解决由于动画未触发导致的图片消失 */
-            * {
-                opacity: 1 !important;
-                visibility: visible !important;
-                background: white !important;
-                color: black !important;
-                box-shadow: none !important;
-                text-shadow: none !important;
-                transform: none !important;
-                transition: none !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            /* 消除全屏高度导致的巨大空白页 */
-            html, body {
-                height: auto !important;
-                overflow: visible !important;
-                background: white !important;
-            }
-
-            header, section, main, div {
-                min-height: 0 !important;
-                height: auto !important;
-                padding: 10px 0 !important;
-                margin: 0 !important;
-                position: static !important;
-            }
-
-            /* 核心：防止板块被分页切断 */
-            section, .document-polaroid, .bg-white, .tab-content {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                margin-bottom: 20px !important;
-                display: block !important;
-            }
-
-            /* 强制展开所有Tab内容供打印 */
-            .tab-content {
-                display: block !important;
-                opacity: 1 !important;
-            }
-
-            /* 修复图片裁剪问题 */
-            .polaroid-img-box {
-                height: auto !important;
-                max-height: none !important;
-            }
-            img {
-                height: auto !important;
-                max-height: 400px !important; /* 限制最大高度防止单张图占满全页 */
-                width: auto !important;
-                max-width: 100% !important;
-                display: block !important;
-                margin: 0 auto !important;
-            }
-
-            /* 缩小边距让内容更紧凑 */
-            .py-24, .py-16, .space-y-24 {
-                padding-top: 15px !important;
-                padding-bottom: 15px !important;
-            }
-            .max-w-7xl, .max-w-4xl {
-                max-width: 100% !important;
-            }
-
-            /* 强制黑底白字部分反转 */
-            .bg-[#111827], .bg-black {
-                background: white !important;
-                border: 1px solid #eee !important;
-            }
-            p, h1, h2, h3, h4 { color: black !important; }
-        }
+        .text-justify-custom { text-align: justify; text-justify: inter-ideograph; }
     </style>
 </head>
-<body class="pattern-grid">
+<body class="antialiased">
 
-    <!-- 导航栏 -->
-    <nav class="fixed w-full top-0 z-[100] bg-[#111827]/95 backdrop-blur border-b border-gray-800 text-white" id="navbar">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <div class="font-black text-xl tracking-widest text-[#FDE68A]">🏛️ 兰氏卷宗</div>
-            <div class="hidden md:flex space-x-6 text-xs font-bold uppercase tracking-widest">
-                <a href="#intro" class="hover:text-[#D97706]">序言</a>
-                <a href="#epic" class="hover:text-[#D97706]">大义史诗</a>
-                <a href="#investigation" class="hover:text-[#D97706]">代号314</a>
-                <a href="#data" class="hover:text-[#D97706]">岁月刻度</a>
-                <a href="#memoir" class="hover:text-[#D97706]">光阴回响</a>
+    <!-- 虚拟放大镜（仅在PC显示） -->
+    <div id="glass"></div>
+
+    <!-- 1. 档案启动仪式 -->
+    <div id="loading-overlay" class="fixed inset-0 z-[5000] flex flex-col items-center justify-center bg-slate-950 p-6 text-center transition-opacity duration-2000">
+        <div class="space-y-12 md:space-y-20 max-w-4xl">
+            <div class="space-y-4">
+                <p class="text-[8px] md:text-[10px] tracking-[1em] text-red-900 font-black uppercase opacity-60">System Ready</p>
+                <h1 class="text-5xl md:text-[10rem] font-black text-[#FDE68A] tracking-tighter filter drop-shadow-[0_0_30px_rgba(253,230,138,0.15)]">兰氏卷宗</h1>
+            </div>
+            <div id="typewriter-box" class="text-slate-500 font-light text-base md:text-2xl h-24 leading-relaxed max-w-xl mx-auto italic">
+                <!-- 动态文本 -->
+            </div>
+            <button onclick="ignite()" class="bg-[#B91C1C] text-white px-8 md:px-12 py-4 md:py-5 text-sm md:text-base font-black tracking-[0.3em] md:tracking-[0.5em] active:scale-95 transition-all duration-300 shadow-2xl">
+                开启跨世纪解密
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. 时空轴 -->
+    <div id="timeline-nav">
+        <div class="nav-dot active" data-year="1935" onclick="jumpTo('vol1')"></div>
+        <div class="nav-dot" data-year="1945" onclick="jumpTo('vol2')"></div>
+        <div class="nav-dot" data-year="1955" onclick="jumpTo('vol3')"></div>
+        <div class="nav-dot" data-year="2008" onclick="jumpTo('vol4')"></div>
+    </div>
+
+    <!-- 3. 顶部进度 -->
+    <div id="truth-rail" class="opacity-0 transition-opacity duration-1000 fixed top-0 left-0 w-full h-1 z-[3000]">
+        <div id="truth-fill" class="h-full w-0 bg-gradient-to-r from-[#450a0a] via-[#B91C1C] to-[#FDE68A] transition-all duration-[2s]"></div>
+    </div>
+
+    <nav class="fixed top-0 w-full z-[1500] h-16 md:h-24 bg-slate-950/40 backdrop-blur-3xl border-b border-white/5 flex items-center px-4 md:px-12 justify-between opacity-0 transition-all duration-1000" id="top-nav">
+        <div class="flex flex-col">
+            <span class="text-red-700 font-black text-[8px] md:text-[11px] tracking-[0.4em] uppercase">Confidential</span>
+            <span class="text-white font-black text-sm md:text-xl tracking-widest">FILE: LAN-314</span>
+        </div>
+        <div class="flex items-center gap-4 md:gap-8">
+            <div class="text-right">
+                <p class="text-[8px] md:text-[11px] text-slate-500 font-black uppercase tracking-widest mb-1">Restoration</p>
+                <p class="text-[#FDE68A] font-black text-lg md:text-3xl leading-none" id="pct-val">0%</p>
+            </div>
+            <div class="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 md:border-4 border-slate-800 flex items-center justify-center bg-slate-900 cursor-pointer shadow-xl" onclick="toggleMute()">
+                <span id="nav-icon" class="text-base md:text-2xl">🔊</span>
             </div>
         </div>
     </nav>
 
-    <!-- 序言 -->
-    <header id="intro" class="relative bg-[#111827] text-white pt-32 pb-20 px-4 text-center min-h-[90vh] flex flex-col justify-center">
-        <div class="max-w-4xl mx-auto relative z-10">
-            <div class="inline-block px-4 py-1 border border-gray-500 text-gray-300 text-xs tracking-[0.4em] mb-8">四川荣县成佳兰氏家族史料考证</div>
-            <h1 class="text-5xl md:text-7xl font-black mb-8 tracking-[0.1em] text-[#FDE68A]">卷宗里的百年</h1>
-            <div class="bg-black/30 p-8 rounded-xl border border-gray-700/50 backdrop-blur-sm">
-                <p class="text-lg leading-loose text-gray-300 text-justify">
-                    真正的史诗正蛰伏于兰氏家族的这堆百年故纸堆里。基于兰氏家族留存的原始手稿与真实物证，还原一场跨越半个世纪、至死方休的民间法理交锋。被掩埋的公理，必将以铁证的形式给出回应。
-                </p>
+    <main id="archive-content" class="hidden">
+        
+        <!-- 第一卷：1935 -->
+        <section id="vol1" class="locked-layer max-w-7xl mx-auto pt-24 md:pt-48 px-4 md:px-6">
+            <div class="paper-tactile rounded-t-[2.5rem] md:rounded-t-[6rem] p-6 md:p-32 shadow-2xl border-t-[10px] md:border-t-[20px] border-red-900 relative">
+                <div class="seal-mark" id="seal-1">兰氏公鉴</div>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-28">
+                    <div class="lg:col-span-8 space-y-6 md:space-y-14">
+                        <div class="inline-block px-3 py-1 bg-red-100 text-red-900 text-[8px] md:text-xs font-black tracking-[0.3em] uppercase">1935 / The Sacrifice</div>
+                        <h2 class="text-4xl md:text-8xl font-black leading-tight text-slate-950 tracking-tighter">第一卷：雪夜里的孤独朝圣</h2>
+                        <div class="prose text-lg md:text-2xl text-slate-900 leading-relaxed md:leading-[2.4] text-justify-custom space-y-6 md:space-y-12 font-medium">
+                            <p class="md:indent-16">后来人，请屏住呼吸。1935年的万县，不仅有积雪，更有令人绝息的<span class="footnote" title="极端政治控制环境">白色恐怖</span>。兰庶康烈士殉难，遗体受尽凌辱。前两批收殓者因恐惧而逃。此时，20多岁的<b>兰硕群</b>接过了一只沉重的木桶和几斤防腐的<span class="footnote" title="当时唯一的遗体防腐方式">生石灰</span>。四十个日夜，他像只孤狼，在黑暗中用双脚丈量正义。</p>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-4 flex flex-col items-center">
+                        <div class="relative group w-full max-w-sm" style="--r: -2deg" onmouseenter="initGlass('遗迹手稿.jpg')" onmouseleave="hideGlass()">
+                            <div class="bg-white p-4 md:p-6 shadow-2xl artifact-container">
+                                <img src="遗迹手稿.jpg" id="target-img" class="w-full h-[350px] md:h-[600px] object-cover rounded cursor-zoom-in" onclick="examine(this.src, '1935年第一份收殓记录手稿细节。')">
+                                <div class="laser-line"></div>
+                            </div>
+                            <p class="text-center mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest block md:hidden">点击图片放大勘验</p>
+                        </div>
+                        <button onclick="advance('vol2', 20, '#0f172a', 'seal-1', 'wind')" class="mt-12 md:mt-24 bg-red-800 text-white px-6 md:px-10 py-4 font-black tracking-widest w-full shadow-lg text-sm md:text-base">研读完毕 · 进入1945年</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二卷：1945 -->
+        <section id="vol2" class="locked-layer max-w-7xl mx-auto px-4 md:px-6">
+            <div class="paper-tactile p-6 md:p-32 shadow-3xl border-x-[10px] md:border-x-[20px] border-orange-900 relative">
+                <div class="seal-mark" id="seal-2">兰氏公鉴</div>
+                <div class="flex flex-col lg:flex-row-reverse gap-10 md:gap-32">
+                    <div class="flex-1 space-y-6 md:space-y-14">
+                        <div class="inline-block px-3 py-1 bg-orange-100 text-orange-900 text-[8px] md:text-xs font-black tracking-[0.3em] uppercase">1945 / The Shield</div>
+                        <h2 class="text-4xl md:text-8xl font-black text-slate-950 leading-tight tracking-tighter">第二卷：捍卫者的“雷霆之木”</h2>
+                        <div class="space-y-6 md:space-y-10 text-lg md:text-2xl leading-relaxed md:leading-[2.5] text-justify-custom text-slate-800 font-light">
+                            <p class="md:indent-16">1945年，伪军士官借宿成佳镇却行抢夺之事。兰硕群抄起捣药用的<b>“碓窝棒”</b>，一跃上房。不到半小时击退十九名持枪士官。乡亲们用最诚实的<span class="footnote" title="中国乡村最原始民主投票">种豆选举</span>选他为村长。那是民心的勋章，但在十年后，却成了枷锁。</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 md:mt-20">
+                            <img src="太婆申诉书1.jpg" class="rounded-lg shadow-xl border-2 md:border-4 border-white cursor-zoom-in" onclick="examine(this.src, '太婆亲笔：陈述丈夫当年的英雄举动。')">
+                            <img src="8.jpg" class="rounded-lg shadow-xl border-2 md:border-4 border-white cursor-zoom-in" onclick="examine(this.src, '乡民联合证词：用红手印保卫真实的历史。')">
+                        </div>
+                    </div>
+                    <div class="lg:w-[450px] flex flex-col justify-center">
+                        <div class="p-8 md:p-14 bg-slate-950 text-[#FDE68A] rounded-[2rem] md:rounded-[4rem] border border-white/10">
+                            <p class="italic text-xl md:text-3xl leading-relaxed font-light">“历史的黑色幽默：在1945年救下的乡亲越多，在1955年的卷宗里就越‘危险’。”</p>
+                        </div>
+                        <button onclick="advance('vol3', 45, '#2d1b1b', 'seal-2', 'conflict')" class="mt-12 md:mt-24 bg-orange-900 text-white px-6 md:px-10 py-4 font-black tracking-widest w-full shadow-lg text-sm md:text-base">揭开1955代号314</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第三卷：1955 -->
+        <section id="vol3" class="locked-layer max-w-7xl mx-auto px-4 md:px-6">
+            <div class="bg-slate-950 text-white p-6 md:p-32 rounded-[2.5rem] md:rounded-[7rem] border-[10px] md:border-[30px] border-red-950 relative overflow-hidden">
+                <div class="seal-mark !border-white !text-white" id="seal-3">兰氏公鉴</div>
+                <div class="relative z-10 space-y-12 md:space-y-28">
+                    <div class="text-center space-y-4 md:space-y-10">
+                        <span class="text-red-700 font-black tracking-widest text-[8px] md:text-sm uppercase">No.(55)314-ERR</span>
+                        <h2 class="text-4xl md:text-[9rem] font-black tracking-tighter">第三卷：被偷走的阳光</h2>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-28 items-center">
+                        <div class="lg:col-span-5">
+                            <div class="bg-slate-900 p-4 border border-slate-800" onclick="examine('兰硕群判决.jpg', '分析结论：罪名竟包括“未栽秧子”，这是一次荒谬的误读。')">
+                                <img src="兰硕群判决.jpg" class="w-full grayscale brightness-50 cursor-zoom-in">
+                                <div class="laser-line"></div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-7 space-y-8 md:space-y-20">
+                            <p class="text-2xl md:text-6xl font-light leading-snug text-red-100 italic">“仅仅因为三箩田里的秧苗未入土，英雄的一生被拦腰折断。”</p>
+                            <p class="text-base md:text-3xl leading-relaxed text-gray-400 font-light text-justify-custom">
+                                判决书列举的罪名竟是“未栽秧子”！一位收殓英雄就此消失。1961年，一张编号“勇亡字第281号”的通知书宣告了一个物理生命的终结。
+                            </p>
+                            <button onclick="advance('vol4', 75, '#020617', 'seal-3', 'silence')" class="w-full bg-red-800 text-white py-4 md:py-6 font-black tracking-widest text-sm md:text-base">复原兰家风骨</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第四卷：2008 -->
+        <section id="vol4" class="locked-layer max-w-7xl mx-auto px-4 md:px-6">
+            <div class="paper-tactile p-6 md:p-32 shadow-3xl border-b-[10px] md:border-b-[20px] border-blue-900 rounded-b-[2.5rem] md:rounded-b-[7rem] relative">
+                <div class="seal-mark" id="seal-4">兰氏公鉴</div>
+                <div class="text-center mb-12 md:mb-32">
+                    <h2 class="text-4xl md:text-8xl font-black text-slate-950 tracking-tighter">第四卷：风骨，向死而生</h2>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-32">
+                    <div class="space-y-8 md:space-y-16 text-lg md:text-3xl leading-relaxed md:leading-[2.6] text-slate-700">
+                        <p class="md:indent-16 text-justify-custom font-light">正义在1991年复苏。爷爷兰仲祥在一生的悲剧中，从未丢掉兰家人的雅兴与硬气。2008年，75岁的他独自坐着<b>20元硬座票</b>进京，那背影是历史最厚重的碑文。</p>
+                        <div class="bg-blue-50 p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] space-y-6 md:space-y-10">
+                            <div class="flex items-center gap-4 md:gap-6 cursor-pointer" onclick="examine('爷爷养鸽子手写书1.jpg', '在申诉黑暗期研究鸽子，代表灵魂依然在仰望飞鸟。')">
+                                <div class="w-12 h-12 md:w-20 md:h-20 bg-blue-900 text-white rounded-full flex items-center justify-center text-xl md:text-4xl">🕊️</div>
+                                <div><h5 class="font-black text-blue-950 text-base md:text-2xl underline">深渊里的仰望</h5></div>
+                            </div>
+                            <div class="flex items-center gap-4 md:gap-6 cursor-pointer" onclick="examine('爷爷分房书.jpg', '在分房协议里手抄宪法，即便受冤也深信公理。')">
+                                <div class="w-12 h-12 md:w-20 md:h-20 bg-blue-900 text-white rounded-full flex items-center justify-center text-xl md:text-4xl">⚖️</div>
+                                <div><h5 class="font-black text-blue-950 text-base md:text-2xl underline">刻进骨子的宪法</h5></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-10 md:p-16 rounded-[2.5rem] md:rounded-[6rem] flex flex-col justify-center text-center space-y-10 md:space-y-16">
+                        <div class="text-6xl md:text-[10rem] animate-pulse">🕰️</div>
+                        <h4 class="text-2xl md:text-5xl font-black text-[#FDE68A] tracking-tighter">真相复原完成</h4>
+                        <button onclick="finalize()" class="bg-[#FDE68A] text-slate-950 px-8 md:px-12 py-4 md:py-6 font-black tracking-widest text-sm md:text-base active:scale-95 transition-transform">签署传承见证</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. 最终卷 -->
+        <div id="final-vault" class="hidden opacity-0 transition-opacity duration-3000 pb-40">
+            <div class="max-w-7xl mx-auto mt-20 md:mt-72 space-y-20 md:space-y-64 px-4 md:px-6">
+                
+                <div class="bg-white p-8 md:p-40 rounded-[2.5rem] md:rounded-[8rem] shadow-4xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-4 md:h-8 bg-gradient-to-r from-red-800 via-slate-800 to-blue-800"></div>
+                    <h3 class="text-2xl md:text-5xl font-black text-slate-800 mb-12 md:mb-32 text-center tracking-widest">【 兰 氏 卷 宗 报 告 】</h3>
+                    <div class="h-[300px] md:h-[700px]"><canvas id="impactChart"></canvas></div>
+                </div>
+
+                <div class="bg-white p-6 md:p-20 rounded-[2.5rem] md:rounded-[8rem] shadow-4xl text-center">
+                    <h3 class="text-red-900 text-2xl md:text-6xl font-black tracking-widest mb-10 md:mb-32 uppercase">影像 · 见证</h3>
+                    <video src="jinian.mp4" controls class="w-full h-auto rounded-3xl md:rounded-[5rem] border-[10px] md:border-[25px] border-slate-50 shadow-2xl"></video>
+                </div>
+
+                <div class="text-center space-y-20 py-20">
+                    <div class="max-w-4xl mx-auto p-10 md:p-20 bg-slate-900/50 backdrop-blur-3xl border-2 md:border-4 rounded-[2.5rem] md:rounded-[7rem] border-gold border-dashed">
+                        <h4 class="text-[#FDE68A] text-xl md:text-4xl font-black mb-10 tracking-widest uppercase">请点亮精神火种</h4>
+                        <div class="flex flex-wrap justify-center gap-3 md:gap-6" id="tribute-wall">
+                            <span class="prayer-tag" onclick="lightFlame(this, '公道自在人心')">公道自在人心</span>
+                            <span class="prayer-tag" onclick="lightFlame(this, '兰氏风骨不灭')">兰氏风骨不灭</span>
+                            <span class="prayer-tag" onclick="lightFlame(this, '正义终有回响')">正义终有回响</span>
+                            <span class="prayer-tag" onclick="lightFlame(this, '守护家族记忆')">守护家族记忆</span>
+                        </div>
+                        
+                        <div id="guardian-badge" class="mt-12 md:mt-20 hidden">
+                            <p class="text-2xl md:text-5xl font-black text-[#FDE68A] tracking-widest mb-10">签署见证成功</p>
+                            <input type="text" id="p-name" placeholder="见证者姓名" class="w-full bg-transparent border-b-2 border-[#FDE68A] text-center text-2xl md:text-5xl py-4 mb-8 text-white outline-none">
+                            <button onclick="generateCertificate()" class="text-sm md:text-xl text-[#FDE68A] border border-[#FDE68A] px-10 py-3 hover:bg-[#FDE68A] hover:text-black transition">获取传承编号</button>
+                        </div>
+                    </div>
+                    <div class="opacity-20 text-[10px] md:text-[14px] tracking-[1.5em] md:tracking-[4em] font-black uppercase pt-20">
+                        LAN FAMILY ARCHIVE © 2026<br>视界重构：兰凯
+                    </div>
+                </div>
             </div>
         </div>
-    </header>
 
-    <main class="space-y-24 py-16">
-        <!-- 第一章：史诗 -->
-        <section id="epic" class="max-w-7xl mx-auto px-4 reveal">
-            <h2 class="text-3xl font-black text-center text-gray-900 mb-12">风骨长存：大义的代价</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
-                <div class="lg:col-span-7 space-y-6 text-gray-700 leading-loose text-lg text-justify drop-cap">
-                    <p>1935年寒冬，兰硕群挺身而出，只身赴万县为革命烈士兰庶康收尸。四十个日夜的风餐露宿，他硬是将义与胆背回了故乡。1945年，他再次率众击退欺凌乡邻的伪军。在那血雨腥风的岁月里，他是一座庇护乡邻、坚不可摧的丰碑。</p>
-                </div>
-                <div class="lg:col-span-5 grid grid-cols-2 gap-4">
-                    <div class="document-polaroid" style="--rotation: -2deg" onclick="openModal('遗迹手稿.jpg', '家族纪实手稿')">
-                        <img src="遗迹手稿.jpg" class="w-full h-40 object-cover">
-                    </div>
-                    <div class="document-polaroid" style="--rotation: 2deg" onclick="openModal('太婆申诉书1.jpg', '太婆龚文成申诉亲笔')">
-                        <img src="太婆申诉书1.jpg" class="w-full h-40 object-cover">
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 第二章：调查 -->
-        <section id="investigation" class="bg-[#111827] py-24 text-white reveal">
-            <div class="max-w-7xl mx-auto px-4">
-                <h2 class="text-4xl font-black text-center mb-12 text-[#FDE68A]">代号314：一场荒诞的交锋</h2>
-                <div class="bg-black/40 border border-gray-700 rounded-[2rem] p-8">
-                    <div class="flex justify-center gap-4 mb-10 no-print">
-                        <button class="tab-btn active px-6 py-2 rounded bg-[#B91C1C] text-sm" onclick="switchTab('verdict', this)">🔒 官方判决</button>
-                        <button class="tab-btn px-6 py-2 rounded border border-gray-600 text-sm" onclick="switchTab('testimony1', this)">🔍 民间证言</button>
-                    </div>
-                    <!-- 打印模式下两个内容都会自动显示 -->
-                    <div id="verdict" class="tab-content active mb-12">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                            <img src="兰硕群判决.jpg" class="md:col-span-5 rounded-lg border border-gray-600 cursor-zoom-in" onclick="openModal(this.src, '1955年 (55)刑字第314号判决书')">
-                            <div class="md:col-span-7"><p class="text-gray-300 text-lg leading-relaxed">1955年，(55)刑字第314号判决书以“未栽秧子”等微小罪名，将义士定性为“历史反革命”。这一纸文书，将兰氏家族拖入了长达三十年的深渊。</p></div>
-                        </div>
-                    </div>
-                    <div id="testimony1" class="tab-content">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-t border-gray-800 pt-8">
-                            <img src="1.jpg" class="md:col-span-5 rounded-lg border border-gray-600 cursor-zoom-in" onclick="openModal(this.src, '乡民林荣龙证实材料')">
-                            <div class="md:col-span-7"><p class="text-gray-300 text-lg leading-relaxed">1991年，乡民林荣龙、饶先郎等纷纷按红手印证实兰硕群当年的壮举，粉碎了判决书中的欲加之罪。</p></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 第三章：数据 -->
-        <section id="data" class="max-w-7xl mx-auto px-4 reveal">
-            <div class="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100">
-                <h3 class="text-xl font-black text-gray-800 mb-8 text-center tracking-widest">岁月刻度对比</h3>
-                <div style="position: relative; height:300px; width:100%"><canvas id="impactChart"></canvas></div>
-            </div>
-        </section>
-
-        <!-- 第四章：回响 -->
-        <section id="memoir" class="bg-white py-16 reveal">
-            <div class="max-w-4xl mx-auto px-4 text-center">
-                <h2 class="text-3xl font-black mb-10">光阴的回响</h2>
-                <div class="space-y-6 text-lg text-gray-700 leading-loose text-justify">
-                    <p>兰仲祥老人在极端的苦难中仍保持着对生活的热爱，他钻研《识鸽子》鉴赏，更将《宪法》条款写进分房协议，用一生的痛换来了对法治最纯粹的信仰。</p>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-                    <img src="爷爷照片2.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '青年兰仲祥')">
-                    <img src="爷爷照片3.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '壮年兰仲祥')">
-                    <img src="爷爷照片4.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '中年兰仲祥')">
-                    <img src="11.jpg" class="rounded-lg shadow border cursor-zoom-in" onclick="openModal(this.src, '晚年兰仲祥于北京')">
-                </div>
-            </div>
-        </section>
-
-        <!-- 画廊 -->
-        <section class="max-w-7xl mx-auto px-4 reveal pb-10">
-            <h2 class="text-2xl font-black text-center mb-10 tracking-widest">全宗卷物证陈列</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <div class="document-polaroid" onclick="openModal('兰硕群判决.jpg', '1955 判决书')"><img src="兰硕群判决.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('9.jpg', '1961 死亡通知书')"><img src="9.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('兰克群 摘帽子通知书.jpg', '1979 摘帽通知书')"><img src="兰克群 摘帽子通知书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('10.jpg', '官方出席证')"><img src="10.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('12.jpg', '2008 申诉火车票')"><img src="12.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('1.jpg', '林荣龙证言')"><img src="1.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('8.jpg', '饶先郎证言')"><img src="8.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('兰克群申诉书.jpg', '胞弟兰克群证词')"><img src="兰克群申诉书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('爷爷养鸽子手写书1.jpg', '识鸽子手稿')"><img src="爷爷养鸽子手写书1.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('爷爷分房书.jpg', '宪法治家书')"><img src="爷爷分房书.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('爷爷照片5.jpg', '晚年合影')"><img src="爷爷照片5.jpg" class="w-full h-32 object-cover"></div>
-                <div class="document-polaroid" onclick="openModal('爷爷照片1.jpg', '1987 身份证明')"><img src="爷爷照片1.jpg" class="w-full h-32 object-cover"></div>
-            </div>
-        </section>
     </main>
 
-    <div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 40px; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
-        <h2 style="color: #8b0000; text-align: center; margin-bottom: 20px;">兰氏百年卷宗：一场跨越时空的数字守望</h2>
-        <p>这一段段被重新打捞起的家族灵魂，不仅仅是文字，更是骨气。从收尸壮举到错位判决，先辈们用行动定义了公道。</p>
-        <p style="text-align: right; font-style: italic; margin-top: 20px;">—— 谨以此馆，献给兰氏家族不屈的先辈</p>
+    <!-- 勘察弹窗 -->
+    <div id="inspector" class="fixed inset-0 bg-black/98 z-[6000] hidden flex-col justify-center items-center p-4 md:p-16 transition-all duration-1000" onclick="closeInspector()">
+        <span class="absolute top-6 right-6 text-white text-4xl md:text-9xl font-thin cursor-pointer select-none">&times;</span>
+        <img id="ins-img" src="" class="max-h-[60vh] md:max-h-[75vh] rounded shadow-[0_0_100px_rgba(255,255,255,0.15)]">
+        <div class="mt-10 p-6 md:p-16 bg-slate-950/80 backdrop-blur-3xl rounded-[2rem] md:rounded-[5rem] max-w-6xl text-center">
+            <p id="ins-cap" class="text-[#FDE68A] text-lg md:text-4xl font-black tracking-widest leading-relaxed"></p>
+        </div>
     </div>
 
-    <div class="max-w-3xl mx-auto my-12 p-6 bg-white border border-gray-200 rounded-2xl shadow-lg text-center">
-        <h3 style="color: #8b0000; margin-bottom: 15px; font-weight: bold;">【 珍 贵 影 像 · 岁 月 留 影 】</h3>
-        <video src="jinian.mp4" controls preload="metadata" style="width: 100%; border-radius: 10px; background: #000;"></video>
-    </div>
-
-    <footer class="bg-[#0f172a] text-white py-12 text-center border-t-8 border-[#B91C1C]">
-        <div class="text-[10px] uppercase tracking-[0.4em] text-gray-500 font-bold">LAN FAMILY MEMORIAL ARCHIVE © 2026</div>
-    </footer>
-
-    <div id="image-modal" class="fixed inset-0 bg-black/95 z-[200] hidden flex flex-col justify-center items-center p-4 transition-opacity" onclick="closeModal()">
-        <img id="modal-img" src="" class="max-h-[85vh] max-w-full rounded shadow-2xl">
-        <p id="modal-caption" class="mt-4 text-[#FDE68A] font-bold text-center"></p>
-    </div>
-
-    <div id="backToTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</div>
-
-    <audio id="familyAudio" loop><source src="bgm.mp3" type="audio/mpeg"></audio>
-    <div id="musicStatus" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(139,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 12px; cursor: pointer;">🎵 点击开启岁月回响</div>
+    <!-- 背景音轨 -->
+    <audio id="bgm" loop><source src="bgm.mp3" type="audio/mpeg"></audio>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+        const typewriter = document.getElementById('typewriter-box');
+        const overlay = document.getElementById('loading-overlay');
+        const content = document.getElementById('archive-content');
+        const bgm = document.getElementById('bgm');
+        const glass = document.getElementById('glass');
+        const isTouch = 'ontouchstart' in window;
 
+        // 1. 打字机
+        const scripts = [
+            "正在扫描 1935 年万县极寒环境参数...",
+            "正在复原 1945 年成佳镇英雄运动轨迹...",
+            "正在重构 (55)刑字第 314 号档案之历史正位...",
+            "真相必有回响。",
+            "后来人，请准备好接管这段百年的重量。"
+        ];
+        let sIdx = 0;
+        function playType() {
+            if (sIdx < scripts.length) {
+                typewriter.innerHTML = `<span class="animate-pulse">${scripts[sIdx]}</span>`;
+                sIdx++;
+                setTimeout(playType, 2600);
+            }
+        }
+        playType();
+
+        // 2. 启动
+        function ignite() {
+            bgm.volume = 0.3; bgm.play().catch(()=>{});
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                content.style.display = 'block';
+                document.getElementById('top-nav').style.opacity = '1';
+                document.getElementById('truth-rail').style.opacity = '1';
+                document.getElementById('timeline-nav').style.opacity = '1';
+                document.body.style.overflow = 'auto';
+                advance('vol1', 5, '#020617');
+            }, 1500);
+        }
+
+        // 3. 推进
+        function advance(id, percent, color, prevSealId, sceneType) {
+            document.documentElement.style.setProperty('--bg-master', color);
+            if(prevSealId) setTimeout(() => document.getElementById(prevSealId).classList.add('active'), 500);
+
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('unlocked');
+            
+            document.getElementById('truth-fill').style.width = percent + '%';
+            document.getElementById('pct-val').innerText = percent + '%';
+            
+            if(sceneType === 'wind') bgm.playbackRate = 0.9; 
+            if(sceneType === 'conflict') bgm.playbackRate = 1.1;
+            if(sceneType === 'silence') bgm.playbackRate = 0.8;
+
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600);
+        }
+
+        // 4. 放大镜逻辑 (PC独有)
+        function initGlass(imgSrc) {
+            if (isTouch) return;
+            glass.style.display = "block";
+            glass.style.backgroundImage = `url('${imgSrc}')`;
+            glass.style.backgroundSize = (document.getElementById('target-img').width * 3) + "px " + (document.getElementById('target-img').height * 3) + "px";
+            window.addEventListener('mousemove', moveGlass);
+        }
+        function hideGlass() {
+            glass.style.display = "none";
+            window.removeEventListener('mousemove', moveGlass);
+        }
+        function moveGlass(e) {
+            const img = document.getElementById('target-img');
+            const pos = img.getBoundingClientRect();
+            let x = e.pageX - pos.left - window.pageXOffset;
+            let y = e.pageY - pos.top - window.pageYOffset;
+            if (x > img.width) x = img.width; if (x < 0) x = 0;
+            if (y > img.height) y = img.height; if (y < 0) y = 0;
+            glass.style.left = (e.clientX - 75) + "px";
+            glass.style.top = (e.clientY - 75) + "px";
+            glass.style.backgroundPosition = "-" + ((x * 3) - 75) + "px -" + ((y * 3) - 75) + "px";
+        }
+
+        // 5. 归档
+        function finalize() {
+            document.getElementById('truth-fill').style.width = '100%';
+            document.getElementById('pct-val').innerText = '100%';
+            document.getElementById('seal-4').classList.add('active');
+            const vault = document.getElementById('final-vault');
+            vault.classList.remove('hidden');
+            setTimeout(() => vault.style.opacity = '1', 100);
+            vault.scrollIntoView({ behavior: 'smooth' });
+            renderChart();
+        }
+
+        function renderChart() {
             const ctx = document.getElementById('impactChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['壮举时刻', '冤狱岁月', '政治连坐', '不屈申诉'],
+                    labels: ['大义(1935)', '护乡(1945)', '冤狱(1955)', '百年守望'],
                     datasets: [{
-                        data: [0.1, 10, 30, 55],
-                        backgroundColor: ['#B91C1C', '#111827', '#D97706', '#1E3A8A'],
-                        borderRadius: 5
+                        data: [0.15, 1, 30, 91],
+                        backgroundColor: ['#B91C1C', '#D97706', '#020617', '#1e3a8a'],
+                        borderRadius: 15, barThickness: isTouch ? 40 : 100
                     }]
                 },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { font: { size: isTouch ? 10 : 14 } } } }
+                }
             });
-
-            window.addEventListener('scroll', () => {
-                document.getElementById('backToTop').style.opacity = window.scrollY > 500 ? "1" : "0";
-            });
-        });
-
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'bg-[#B91C1C]'));
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active', 'bg-[#B91C1C]');
         }
 
-        function openModal(src, caption) {
-            document.getElementById('modal-img').src = src;
-            document.getElementById('modal-caption').textContent = caption;
-            document.getElementById('image-modal').classList.remove('hidden');
+        function lightFlame(el, text) {
+            el.innerHTML = "🔥 " + text; el.style.color = "#FDE68A";
+            document.getElementById('guardian-badge').classList.remove('hidden');
         }
-        function closeModal() { document.getElementById('image-modal').classList.add('hidden'); }
 
-        const audio = document.getElementById('familyAudio');
-        const statusBtn = document.getElementById('musicStatus');
-        document.addEventListener('click', () => { audio.play().then(() => { statusBtn.innerHTML = "🎵 正在播放"; }); }, { once: true });
-        statusBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (audio.paused) { audio.play(); statusBtn.innerHTML = "🎵 正在播放"; }
-            else { audio.pause(); statusBtn.innerHTML = "🎵 已暂停"; }
-        };
+        function generateCertificate() {
+            const name = document.getElementById('p-name').value || "后来人";
+            alert(`传承者 ${name}，您的见证编号已永久载入兰氏数字族谱。`);
+            document.getElementById('nav-icon').innerText = "✨";
+        }
+
+        function examine(src, cap) {
+            document.getElementById('ins-img').src = src;
+            document.getElementById('ins-cap').innerText = cap;
+            document.getElementById('inspector').classList.replace('hidden', 'flex');
+        }
+        function closeInspector() { document.getElementById('inspector').classList.replace('flex', 'hidden'); }
+        function jumpTo(id) { document.getElementById(id).scrollIntoView({behavior: 'smooth'}); }
+        function toggleMute() { bgm.paused ? bgm.play() : bgm.pause(); }
     </script>
 </body>
 </html>
