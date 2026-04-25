@@ -36,6 +36,26 @@
         .pattern-dots {
             /* 专属纸质书打印排版方案 */
 @media print {
+    /* 6. 强制解除所有隐藏动画，确保所有图片和文字在打印时100%显示 */
+    .reveal, .gallery-item {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        transition: none !important;
+        display: block !important;
+    }
+
+    /* 确保图片容器和图片本身在打印时完全显示 */
+    .document-polaroid, .polaroid-img-box, img {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* 移除可能导致打印截断的设置 */
+    html, body {
+        overflow: visible !important;
+        height: auto !important;
+    }
     /* 1. 隐藏所有不需要打印的网页互动元素 */
     #navbar, #musicStatus, audio, video, button, .filter-btn, .tab-btn {
         display: none !important;
@@ -844,8 +864,7 @@
             }
         });
     </script>
-
-    <div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
+<div style="background: #f9f9f9; padding: 30px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #8b0000; line-height: 1.8; color: #333;">
         <h2 style="color: #8b0000; text-align: center;">兰氏百年卷宗：一场跨越时空的数字守望</h2>
         <p><b>这不仅仅是一个网页，更是一段被重新打捞起的家族灵魂。</b></p>
         <p>当我第一次翻开那些泛黄的档案，看着兰硕群公在1935年孤勇徒步四十天为烈士收尸的记载，看着那份写满时代错位的1955年判决书，我意识到，这些文字不该只躺在抽屉的角落里渐渐腐朽。它们是骨气，是公道，是兰氏子孙血脉里流淌的不屈。</p>
@@ -855,13 +874,12 @@
         在搭建的过程中，我仿佛与先辈们进行了一场长达百年的对话。每一次点击、每一处排版，都是在试图还原那段厚重的史诗。当最后一串代码敲定，当“兰氏家族纪念馆”的网址正式上线的那一刻，我知道，这些属于先辈的荣光与苦难，终于有了一个永不落幕的港湾。</p>
         <p style="text-align: right; font-style: italic;">—— 谨以此馆，献给兰氏家族不屈的先辈</p>
     </div>
+
     <div style="max-width: 800px; margin: 40px auto; padding: 25px; background: #ffffff; border: 1px solid #eaeaea; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); text-align: center;">
-    <h3 style="color: #8b0000; margin-bottom: 20px; font-size: 1.2rem; letter-spacing: 3px; font-weight: bold;">【 珍 贵 影 像 · 岁 月 留 影 】</h3>
-    
-    <video src="jinian.mp4" controls preload="metadata" style="width: 100%; border-radius: 10px; background: #000; max-height: 480px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);"></video>
-    
-    <p style="margin-top: 15px; font-size: 13px; color: #888; font-style: italic;">点击画面，开启一段鲜活的家族记忆</p>
-</div>
+        <h3 style="color: #8b0000; margin-bottom: 20px; font-size: 1.2rem; letter-spacing: 3px; font-weight: bold;">【 珍 贵 影 像 · 岁 月 留 影 】</h3>
+        <video src="jinian.mp4" controls preload="metadata" style="width: 100%; border-radius: 10px; background: #000; max-height: 480px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);"></video>
+        <p style="margin-top: 15px; font-size: 13px; color: #888; font-style: italic;">点击画面，开启一段鲜活的家族记忆</p>
+    </div>
 
     <audio id="familyAudio" loop>
         <source src="bgm.mp3" type="audio/mpeg">
@@ -883,13 +901,13 @@
             });
         }
 
-        // 监听用户在页面上的任何交互，一旦触碰即刻播放
+        // 监听交互播放
         document.addEventListener('touchstart', tryAutoplay, { once: true });
         document.addEventListener('click', tryAutoplay, { once: true });
 
-        // 悬浮按钮点击开关
+        // 按钮点击开关
         statusBtn.onclick = function(e) {
-            e.stopPropagation(); // 防止触发上面的全局点击事件
+            e.stopPropagation(); 
             if (audio.paused) {
                 audio.play();
                 statusBtn.innerHTML = "🎵 正在播放";
