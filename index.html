@@ -82,24 +82,24 @@
            核心修复：纸质书打印与PDF导出方案
            ========================================= */
         @media print {
-            /* 1. 隐藏所有干扰元素 */
+            /* 1. 隐藏干扰元素 */
             #navbar, #musicStatus, audio, video, button, .filter-btn, .tab-btn, .no-print, .animate-bounce {
                 display: none !important;
             }
 
-            /* 2. 彻底解决“白字隐形”：强制所有背景为白，所有文字为黑 */
-            body, main, section, header, div, .bg-[#111827], .bg-black {
+            /* 2. 强制全员反色：背景白，文字黑，解决白字隐形 */
+            * {
                 background: white !important;
-                background-image: none !important;
                 color: black !important;
-            }
-            h1, h2, h3, h4, p, span, b, strong {
-                color: black !important;
+                box-shadow: none !important;
                 text-shadow: none !important;
+                filter: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
-            /* 3. 彻底解决“空白页面”：强制显示所有隐藏的动画内容 */
-            .reveal, .gallery-item, .tab-content {
+            /* 3. 彻底强制显示：无视所有 opacity:0 或 transform */
+            .reveal, .gallery-item, .tab-content, div, section, header, main, p, img {
                 opacity: 1 !important;
                 visibility: visible !important;
                 transform: none !important;
@@ -107,28 +107,33 @@
                 transition: none !important;
             }
 
-            /* 4. 优化纸张布局：缩小间距 */
+            /* 4. 布局重置：去掉全屏高度和过大边距 */
             header, section, main {
                 min-height: 0 !important;
+                height: auto !important;
                 padding: 10px 0 !important;
                 margin: 0 !important;
-            }
-            .py-32, .pt-32, .pb-24, .space-y-32, .my-12 {
-                padding-top: 5px !important;
-                padding-bottom: 5px !important;
-                margin-top: 5px !important;
-                margin-bottom: 5px !important;
-            }
-
-            /* 5. 防止照片被截断 */
-            img, .document-polaroid {
-                page-break-inside: avoid !important;
-                opacity: 1 !important;
+                page-break-inside: auto !important;
             }
             
+            /* 5. 标题优化：缩小间距防止产生空白页 */
+            h1, h2, h3 {
+                margin-top: 20px !important;
+                margin-bottom: 10px !important;
+                page-break-after: avoid;
+            }
+
+            /* 6. 图片与卡片：防止被截断在两页中间 */
+            img, .document-polaroid {
+                page-break-inside: avoid !important;
+                max-width: 100% !important;
+            }
+            
+            /* 7. 解决溢出导致的截断 */
             html, body {
                 overflow: visible !important;
                 height: auto !important;
+                background: white !important;
             }
         }
     </style>
